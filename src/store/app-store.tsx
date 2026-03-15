@@ -5,6 +5,7 @@ import { STATE_VERSION } from "@/lib/constants";
 import { getAutoKcalFromDraft, parseDraftNumber } from "@/lib/products";
 import { localAppRepository } from "@/lib/repository";
 import type {
+  FormulaMode,
   MealType,
   PersistedAppState,
   Product,
@@ -20,7 +21,15 @@ type HydratedState = PersistedAppState & {
 
 type ProfileInput = Pick<
   UserProfile,
-  "name" | "sex" | "heightCm" | "weightKg" | "goalWeightKg" | "proteinPerKg" | "fatPerKg" | "carbsPerKg"
+  | "name"
+  | "sex"
+  | "heightCm"
+  | "weightKg"
+  | "goalWeightKg"
+  | "formulaMode"
+  | "proteinPerKg"
+  | "fatPerKg"
+  | "carbsPerKg"
 >;
 
 type ProductInput = {
@@ -36,6 +45,7 @@ type Action =
         userId: string;
         date: string;
         mealType: MealType;
+        mealLabel?: string;
         productId: string;
         grams: number;
         quantityMode?: QuantityMode;
@@ -44,7 +54,14 @@ type Action =
     }
   | {
       type: "updateMealItem";
-      payload: { itemId: string; grams?: number; mealType?: MealType; quantityMode?: QuantityMode; servings?: number | null };
+      payload: {
+        itemId: string;
+        grams?: number;
+        mealType?: MealType;
+        mealLabel?: string;
+        quantityMode?: QuantityMode;
+        servings?: number | null;
+      };
     }
   | { type: "deleteMealItem"; payload: { itemId: string } }
   | { type: "createProfile"; payload: ProfileInput }
@@ -77,6 +94,7 @@ function normalizeState(payload: PersistedAppState): PersistedAppState {
     recentProductsByUser: payload.recentProductsByUser ?? {},
     profiles: payload.profiles.map((profile) => ({
       ...profile,
+      formulaMode: profile.formulaMode ?? "custom",
       heightCm: profile.heightCm ?? null,
       goalWeightKg: profile.goalWeightKg ?? profile.weightKg,
     })),
@@ -90,6 +108,7 @@ function normalizeState(payload: PersistedAppState): PersistedAppState {
     })),
     mealItems: payload.mealItems.map((item) => ({
       ...item,
+      mealLabel: item.mealLabel ?? "",
       quantityMode: item.quantityMode === "piece" ? "piece" : "grams",
       servings: item.servings ?? null,
     })),
@@ -106,7 +125,9 @@ function toProductEntity(draft: ProductDraft, existing?: Product): Product {
     proteinPer100: parseDraftNumber(draft.proteinPer100) ?? 0,
     fatPer100: parseDraftNumber(draft.fatPer100) ?? 0,
     carbsPer100: parseDraftNumber(draft.carbsPer100) ?? 0,
-    kcalPer100: draft.kcalPer100.trim() ? (parseDraftNumber(draft.kcalPer100) ?? getAutoKcalFromDraft(draft)) : getAutoKcalFromDraft(draft),
+    kcalPer100: draft.kcalPer100.trim()
+      ? (parseDraftNumber(draft.kcalPer100) ?? getAutoKcalFromDraft(draft))
+      : getAutoKcalFromDraft(draft),
     unitMode: draft.unitMode,
     unitLabel: draft.unitMode === "piece" ? draft.unitLabel.trim() : "",
     gramsPerUnit: draft.unitMode === "piece" ? (parseDraftNumber(draft.gramsPerUnit) ?? null) : null,
@@ -163,7 +184,7 @@ function reducer(state: HydratedState, action: Action): HydratedState {
         selectedUserId: action.payload,
       };
     case "addMealItem": {
-      const { userId, date, mealType, productId, grams, quantityMode, servings } = action.payload;
+      const { userId, date, mealType, mealLabel, productId, grams, quantityMode, servings } = action.payload;
       const ensured = ensureDayEntry(state, userId, date);
       const nextOrder =
         state.mealItems
@@ -173,12 +194,7 @@ function reducer(state: HydratedState, action: Action): HydratedState {
       return {
         ...state,
         dayEntries: ensured.dayEntries.map((entry) =>
-          entry.id === ensured.dayEntryId
-            ? {
-                ...entry,
-                updatedAt: new Date().toISOString(),
-              }
-            : entry,
+          entry.id === ensured.dayEntryId ? { ...entry, updatedAt: new Date().toISOString() } : entry,
         ),
         mealItems: [
           ...state.mealItems,
@@ -186,6 +202,7 @@ function reducer(state: HydratedState, action: Action): HydratedState {
             id: createId("meal"),
             dayEntryId: ensured.dayEntryId,
             mealType,
+            mealLabel: mealLabel ?? "",
             productId,
             grams,
             quantityMode: quantityMode ?? "grams",
@@ -213,6 +230,7 @@ function reducer(state: HydratedState, action: Action): HydratedState {
                 ...candidate,
                 grams: action.payload.grams ?? candidate.grams,
                 mealType: action.payload.mealType ?? candidate.mealType,
+                mealLabel: action.payload.mealLabel ?? candidate.mealLabel ?? "",
                 quantityMode: action.payload.quantityMode ?? candidate.quantityMode ?? "grams",
                 servings:
                   action.payload.servings === undefined ? (candidate.servings ?? null) : action.payload.servings,
@@ -240,6 +258,7 @@ function reducer(state: HydratedState, action: Action): HydratedState {
       const profile = {
         id: createId("profile"),
         ...action.payload,
+        formulaMode: action.payload.formulaMode ?? "standard",
         heightCm: action.payload.heightCm ?? null,
         goalWeightKg: action.payload.goalWeightKg ?? action.payload.weightKg,
         createdAt: now,
@@ -354,6 +373,7 @@ type StoreValue = {
     userId: string;
     date: string;
     mealType: MealType;
+    mealLabel?: string;
     productId: string;
     grams: number;
     quantityMode?: QuantityMode;
@@ -363,6 +383,7 @@ type StoreValue = {
     itemId: string;
     grams?: number;
     mealType?: MealType;
+    mealLabel?: string;
     quantityMode?: QuantityMode;
     servings?: number | null;
   }) => void;
@@ -447,4 +468,8 @@ export function sanitizeNumber(value: string, fallback = 0) {
 
 export function sexLabel(sex: Sex) {
   return sex === "female" ? "Женский" : "Мужской";
+}
+
+export function formulaLabel(mode: FormulaMode) {
+  return mode === "standard" ? "Стандартная" : "Своя";
 }

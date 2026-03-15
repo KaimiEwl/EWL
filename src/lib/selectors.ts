@@ -1,4 +1,4 @@
-import { mealOrder } from "@/lib/constants";
+import { mealLabels, mealOrder } from "@/lib/constants";
 import { getVisibleProducts } from "@/lib/products";
 import {
   calculateProductNutrition,
@@ -16,6 +16,30 @@ import type {
   Product,
   UserProfile,
 } from "@/lib/types";
+
+type SuggestionPreset = {
+  title: string;
+  description: string;
+  keywords: string[];
+};
+
+const suggestionPresets: SuggestionPreset[] = [
+  {
+    title: "Добрать белок",
+    description: "Сделайте упор на белок без лишней тяжести.",
+    keywords: ["кур", "индей", "твор", "йогур", "яйц", "рыб", "тунец", "лосос", "крев"],
+  },
+  {
+    title: "Добрать углеводы",
+    description: "Спокойно доберите энергию на день.",
+    keywords: ["рис", "греч", "овся", "банан", "карто", "макарон", "хлеб", "булгур"],
+  },
+  {
+    title: "Добрать жиры",
+    description: "Подойдет небольшой плотный продукт.",
+    keywords: ["авок", "орех", "сыр", "масл", "семеч"],
+  },
+];
 
 export function getSelectedUser(state: PersistedAppState) {
   return state.profiles.find((profile) => profile.id === state.selectedUserId) ?? state.profiles[0] ?? null;
@@ -65,8 +89,15 @@ export function getDaySummary(state: PersistedAppState, user: UserProfile | null
   const items = state.mealItems
     .filter((item) => item.dayEntryId === entry?.id)
     .sort((left, right) => {
-      if (left.mealType !== right.mealType) {
-        return mealOrder.indexOf(left.mealType) - mealOrder.indexOf(right.mealType);
+      const leftIndex = mealOrder.indexOf(left.mealType === "custom" ? "dinner" : left.mealType);
+      const rightIndex = mealOrder.indexOf(right.mealType === "custom" ? "dinner" : right.mealType);
+
+      if (leftIndex !== rightIndex) {
+        return leftIndex - rightIndex;
+      }
+
+      if ((left.mealLabel ?? "") !== (right.mealLabel ?? "")) {
+        return (left.mealLabel ?? "").localeCompare(right.mealLabel ?? "", "ru");
       }
 
       return left.sortOrder - right.sortOrder;
@@ -98,6 +129,31 @@ export function getDaySummary(state: PersistedAppState, user: UserProfile | null
   };
 }
 
+export function getMealSections(summary: DaySummary) {
+  const baseSections = mealOrder.map((mealType) => ({
+    id: mealType,
+    mealType,
+    label: mealLabels[mealType],
+    rows: summary.items.filter((item) => item.item.mealType === mealType),
+  }));
+
+  const customGroups = new Map<string, DayMealRow[]>();
+  for (const row of summary.items.filter((item) => item.item.mealType === "custom")) {
+    const label = row.item.mealLabel?.trim() || "Доп. прием";
+    const current = customGroups.get(label) ?? [];
+    customGroups.set(label, [...current, row]);
+  }
+
+  const customSections = [...customGroups.entries()].map(([label, rows], index) => ({
+    id: `custom-${index}-${label}`,
+    mealType: "custom" as const,
+    label,
+    rows,
+  }));
+
+  return [...baseSections, ...customSections];
+}
+
 export function getItemsByMeal(summary: DaySummary) {
   return mealOrder.reduce<Record<MealType, DayMealRow[]>>(
     (acc, mealType) => {
@@ -109,12 +165,95 @@ export function getItemsByMeal(summary: DaySummary) {
       lunch: [],
       dinner: [],
       snack: [],
+      custom: [],
     },
   );
 }
 
 export function getMealTotals(rows: DayMealRow[]) {
   return sumNutrition(rows.map((row) => row.nutrition));
+}
+
+function getSuggestedPortion(product: Product) {
+  if (product.unitMode === "piece" && (product.gramsPerUnit ?? 0) > 0) {
+    return {
+      grams: Math.max(1, Math.round(product.gramsPerUnit ?? 0)),
+      label: `1 ${product.unitLabel?.trim() || "шт."}`,
+    };
+  }
+
+  return {
+    grams: 100,
+    label: "100 г",
+  };
+}
+
+function matchesSuggestionPreset(product: Product, keywords: string[]) {
+  const haystack = `${product.name} ${(product.searchTerms ?? []).join(" ")}`.toLowerCase();
+  return keywords.some((keyword) => haystack.includes(keyword));
+}
+
+function pickSuggestionPreset(balance: NutritionTotals) {
+  const positiveProtein = Math.max(balance.protein, 0);
+  const positiveFat = Math.max(balance.fat, 0);
+  const positiveCarbs = Math.max(balance.carbs, 0);
+
+  if (positiveProtein >= positiveFat && positiveProtein >= positiveCarbs) {
+    return suggestionPresets[0];
+  }
+
+  if (positiveCarbs >= positiveProtein && positiveCarbs >= positiveFat) {
+    return suggestionPresets[1];
+  }
+
+  return suggestionPresets[2];
+}
+
+export function getDaySuggestion(summary: DaySummary, products: Product[]) {
+  if (!summary.target || !summary.balance) {
+    return null;
+  }
+
+  if (summary.balance.kcal <= 0) {
+    return {
+      title: "Цель на день уже закрыта",
+      description: "Можно оставить только воду, чай или легкий овощной перекус без спешки.",
+    };
+  }
+
+  const preset = pickSuggestionPreset(summary.balance);
+  const preferredProducts = getVisibleProducts(products).filter((product) =>
+    matchesSuggestionPreset(product, preset.keywords),
+  );
+  const candidates = preferredProducts.length ? preferredProducts : getVisibleProducts(products);
+
+  const recommended = candidates
+    .map((product) => {
+      const portion = getSuggestedPortion(product);
+      const nutrition = calculateProductNutrition(product, portion.grams);
+      const kcalGap = Math.abs(summary.balance!.kcal - nutrition.kcal);
+      const proteinScore = Math.min(nutrition.protein, Math.max(summary.balance!.protein, 0)) * 5;
+      const carbScore = Math.min(nutrition.carbs, Math.max(summary.balance!.carbs, 0)) * 3;
+      const fatScore = Math.min(nutrition.fat, Math.max(summary.balance!.fat, 0)) * 2;
+      const overflowPenalty = nutrition.kcal > summary.balance!.kcal + 120 ? 200 : 0;
+
+      return {
+        product,
+        portion,
+        nutrition,
+        score: proteinScore + carbScore + fatScore - kcalGap / 10 - overflowPenalty,
+      };
+    })
+    .sort((left, right) => right.score - left.score)[0];
+
+  if (!recommended) {
+    return null;
+  }
+
+  return {
+    title: preset.title,
+    description: `${preset.description} Попробуйте ${recommended.product.name.toLowerCase()} — ${recommended.portion.label}, это примерно ${recommended.nutrition.kcal} ккал.`,
+  };
 }
 
 export function getMonthSummaryMap(state: PersistedAppState, user: UserProfile | null, monthDate: Date) {

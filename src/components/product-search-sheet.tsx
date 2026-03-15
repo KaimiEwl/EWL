@@ -24,6 +24,7 @@ export function ProductSearchSheet({
   products,
   recentProducts,
   initialMealType,
+  initialMealLabel = "",
   onClose,
   onSubmit,
   onCreateProduct,
@@ -35,9 +36,11 @@ export function ProductSearchSheet({
   products: Product[];
   recentProducts: Product[];
   initialMealType: MealType;
+  initialMealLabel?: string;
   onClose: () => void;
   onSubmit: (payload: {
     mealType: MealType;
+    mealLabel?: string;
     productId: string;
     grams: number;
     quantityMode?: "grams" | "piece";
@@ -52,6 +55,7 @@ export function ProductSearchSheet({
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [amount, setAmount] = useState("100");
   const [mealType, setMealType] = useState<MealType>(initialMealType);
+  const [mealLabel, setMealLabel] = useState(initialMealLabel);
   const [editorState, setEditorState] = useState<EditorState>(null);
 
   const filteredProducts = useMemo(() => rankProducts(products, query), [products, query]);
@@ -64,6 +68,8 @@ export function ProductSearchSheet({
   const unitLabel = getProductUnitLabel(selectedProduct);
   const canSubmit = Boolean(selectedProduct) && Number.isFinite(numericAmount) && numericAmount > 0;
   const quickAmounts = selectedMode === "piece" ? [1, 2, 3] : [100, 200, 300, 400];
+  const mealCandidates = initialMealLabel ? [...mealOrder, "custom" as const] : mealOrder;
+  const mealLabelText = mealType === "custom" ? mealLabel || "свой прием пищи" : mealLabels[mealType];
 
   if (!open) {
     return null;
@@ -166,19 +172,33 @@ export function ProductSearchSheet({
             />
 
             <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-              {mealOrder.map((candidate) => (
+              {mealCandidates.map((candidate) => (
                 <button
                   key={candidate}
                   type="button"
-                  onClick={() => setMealType(candidate)}
+                  onClick={() => {
+                    setMealType(candidate);
+                    if (candidate !== "custom") {
+                      setMealLabel("");
+                    }
+                  }}
                   className={`rounded-full px-4 py-2 text-sm font-semibold ${
                     mealType === candidate ? "bg-[var(--color-accent)] text-white" : "bg-slate-100 text-slate-600"
                   }`}
                 >
-                  {mealLabels[candidate]}
+                  {candidate === "custom" ? "Свой прием" : mealLabels[candidate]}
                 </button>
               ))}
             </div>
+            {mealType === "custom" || initialMealLabel ? (
+              <input
+                type="text"
+                value={mealLabel}
+                onChange={(event) => setMealLabel(event.target.value)}
+                placeholder="Название приема пищи"
+                className="mt-3 h-12 w-full rounded-[1rem] border border-[var(--color-outline)] bg-white px-4 outline-none"
+              />
+            ) : null}
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
@@ -229,7 +249,7 @@ export function ProductSearchSheet({
                   </p>
                   <p className="mt-1 text-sm text-slate-500">
                     {selectedProduct
-                      ? `Добавление в ${mealLabels[mealType].toLowerCase()}.`
+                      ? `Добавление в ${mealLabelText.toLowerCase()}.`
                       : "Сначала выберите продукт."}
                   </p>
                 </div>
@@ -259,6 +279,7 @@ export function ProductSearchSheet({
 
                     onSubmit({
                       mealType,
+                      mealLabel: mealType === "custom" || mealLabel.trim() ? mealLabel.trim() : undefined,
                       productId: selectedProduct.id,
                       ...toMealItemQuantity(selectedProduct, numericAmount),
                     });

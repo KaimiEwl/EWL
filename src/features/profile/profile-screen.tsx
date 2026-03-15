@@ -1,10 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { UserSwitcher } from "@/components/user-switcher";
-import { calculateTargets } from "@/lib/macros";
+import { STANDARD_FORMULA } from "@/lib/constants";
+import { calculateTargets, resolveProfileFormula } from "@/lib/macros";
 import { getSelectedUser } from "@/lib/selectors";
-import { useAppStore, sanitizeNumber } from "@/store/app-store";
+import type { FormulaMode } from "@/lib/types";
+import { formulaLabel, useAppStore, sanitizeNumber } from "@/store/app-store";
+import { UserSwitcher } from "@/components/user-switcher";
 
 const inputClass =
   "mt-2 h-12 w-full rounded-[1rem] border border-[var(--color-outline)] bg-white px-4 text-[15px] outline-none";
@@ -15,6 +17,7 @@ type ProfileDraft = {
   heightCm: string;
   weightKg: string;
   goalWeightKg: string;
+  formulaMode: FormulaMode;
   proteinPerKg: string;
   fatPerKg: string;
   carbsPerKg: string;
@@ -26,9 +29,10 @@ const emptyDraft: ProfileDraft = {
   heightCm: "",
   weightKg: "",
   goalWeightKg: "",
-  proteinPerKg: "2",
-  fatPerKg: "1.5",
-  carbsPerKg: "3",
+  formulaMode: "standard",
+  proteinPerKg: String(STANDARD_FORMULA.proteinPerKg),
+  fatPerKg: String(STANDARD_FORMULA.fatPerKg),
+  carbsPerKg: String(STANDARD_FORMULA.carbsPerKg),
 };
 
 export function ProfileScreen() {
@@ -42,17 +46,28 @@ export function ProfileScreen() {
   const draftHeight = sanitizeNumber(draft.heightCm, 0);
   const draftWeight = sanitizeNumber(draft.weightKg, 0);
   const draftGoalWeight = sanitizeNumber(draft.goalWeightKg, 0);
-  const draftProtein = sanitizeNumber(draft.proteinPerKg, 0);
-  const draftFat = sanitizeNumber(draft.fatPerKg, 0);
-  const draftCarbs = sanitizeNumber(draft.carbsPerKg, 0);
+  const draftProtein = sanitizeNumber(draft.proteinPerKg, STANDARD_FORMULA.proteinPerKg);
+  const draftFat = sanitizeNumber(draft.fatPerKg, STANDARD_FORMULA.fatPerKg);
+  const draftCarbs = sanitizeNumber(draft.carbsPerKg, STANDARD_FORMULA.carbsPerKg);
+  const draftFormula = useMemo(
+    () =>
+      draft.formulaMode === "standard"
+        ? STANDARD_FORMULA
+        : {
+            proteinPerKg: draftProtein,
+            fatPerKg: draftFat,
+            carbsPerKg: draftCarbs,
+          },
+    [draft.formulaMode, draftProtein, draftFat, draftCarbs],
+  );
   const draftValid =
     draft.name.trim().length >= 2 &&
     draftHeight > 0 &&
     draftWeight > 0 &&
     draftGoalWeight > 0 &&
-    draftProtein > 0 &&
-    draftFat > 0 &&
-    draftCarbs > 0;
+    draftFormula.proteinPerKg > 0 &&
+    draftFormula.fatPerKg > 0 &&
+    draftFormula.carbsPerKg > 0;
 
   const draftPreview = useMemo(
     () =>
@@ -63,13 +78,14 @@ export function ProfileScreen() {
         heightCm: draftHeight || null,
         weightKg: draftWeight || 0,
         goalWeightKg: draftGoalWeight || draftWeight || 0,
-        proteinPerKg: draftProtein || 0,
-        fatPerKg: draftFat || 0,
-        carbsPerKg: draftCarbs || 0,
+        formulaMode: draft.formulaMode,
+        proteinPerKg: draftFormula.proteinPerKg,
+        fatPerKg: draftFormula.fatPerKg,
+        carbsPerKg: draftFormula.carbsPerKg,
         createdAt: "",
         updatedAt: "",
       }),
-    [draft, draftCarbs, draftFat, draftGoalWeight, draftHeight, draftProtein, draftWeight],
+    [draft, draftFormula, draftGoalWeight, draftHeight, draftWeight],
   );
 
   if (!state.hydrated) {
@@ -83,9 +99,10 @@ export function ProfileScreen() {
       heightCm: draftHeight,
       weightKg: draftWeight,
       goalWeightKg: draftGoalWeight,
-      proteinPerKg: draftProtein,
-      fatPerKg: draftFat,
-      carbsPerKg: draftCarbs,
+      formulaMode: draft.formulaMode,
+      proteinPerKg: draftFormula.proteinPerKg,
+      fatPerKg: draftFormula.fatPerKg,
+      carbsPerKg: draftFormula.carbsPerKg,
     });
     setDraft(emptyDraft);
     setShowCreateProfile(false);
@@ -99,7 +116,7 @@ export function ProfileScreen() {
         <section className="app-card rounded-[2rem] p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Профиль</p>
           <h1 className="mt-2 text-2xl font-semibold text-slate-900">Создайте профиль</h1>
-          <p className="mt-2 text-sm text-slate-500">Введите имя, рост, вес и желаемый вес.</p>
+          <p className="mt-2 text-sm text-slate-500">Введите имя, пол, рост, вес и желаемый вес.</p>
 
           {!showCreateProfile ? (
             <button
@@ -112,10 +129,9 @@ export function ProfileScreen() {
           ) : (
             <div className="mt-5">
               <ProfileForm
-                mode="create"
                 draft={draft}
                 onChange={setDraft}
-                previewKcal={draftPreview.kcal}
+                preview={draftPreview}
                 valid={draftValid}
                 onSubmit={saveNewProfile}
                 onCancel={() => {
@@ -126,11 +142,14 @@ export function ProfileScreen() {
             </div>
           )}
         </section>
+
+        <BackupNote />
       </div>
     );
   }
 
   const targets = calculateTargets(selectedUser);
+  const selectedFormula = resolveProfileFormula(selectedUser);
 
   return (
     <div className="space-y-4">
@@ -154,13 +173,21 @@ export function ProfileScreen() {
 
         <div className="mt-4 grid grid-cols-2 gap-3">
           <div className="rounded-[1.25rem] bg-white px-4 py-4">
-            <div className="text-xs uppercase tracking-[0.16em] text-slate-400">Калории</div>
-            <div className="mt-2 text-2xl font-semibold text-slate-900">{targets.kcal}</div>
+            <div className="text-xs uppercase tracking-[0.16em] text-slate-400">Цель</div>
+            <div className="mt-2 text-2xl font-semibold text-slate-900">{targets.kcal} ккал</div>
+            <div className="mt-2 text-xs text-slate-500">{formulaLabel(selectedUser.formulaMode)} формула</div>
           </div>
           <div className="rounded-[1.25rem] bg-white px-4 py-4 text-sm text-slate-600">
             <div>Б {targets.protein}</div>
             <div className="mt-1">Ж {targets.fat}</div>
             <div className="mt-1">У {targets.carbs}</div>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-[1.35rem] bg-[var(--color-mint-soft)] px-4 py-4 text-sm text-slate-700">
+          <div className="font-semibold text-slate-900">Формула</div>
+          <div className="mt-1">
+            {formulaLabel(selectedUser.formulaMode)} • Б {selectedFormula.proteinPerKg} / Ж {selectedFormula.fatPerKg} / У {selectedFormula.carbsPerKg} на кг
           </div>
         </div>
 
@@ -182,6 +209,8 @@ export function ProfileScreen() {
           </div>
         ) : null}
       </section>
+
+      <BackupNote />
 
       <section className="app-card rounded-[2rem] p-5">
         <div className="flex items-center justify-between gap-3">
@@ -218,10 +247,9 @@ export function ProfileScreen() {
         {showCreateProfile ? (
           <div className="mt-5">
             <ProfileForm
-              mode="create"
               draft={draft}
               onChange={setDraft}
-              previewKcal={draftPreview.kcal}
+              preview={draftPreview}
               valid={draftValid}
               onSubmit={saveNewProfile}
               onCancel={() => {
@@ -236,19 +264,106 @@ export function ProfileScreen() {
   );
 }
 
-function ProfileForm({
+function FormulaModeSwitch({
+  value,
+  onChange,
+}: {
+  value: FormulaMode;
+  onChange: (mode: FormulaMode) => void;
+}) {
+  return (
+    <div>
+      <div className="text-sm font-medium text-slate-600">Формула</div>
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        {(["standard", "custom"] as const).map((mode) => (
+          <button
+            key={mode}
+            type="button"
+            onClick={() => onChange(mode)}
+            className={`min-h-11 rounded-[1rem] px-4 py-3 text-sm font-semibold ${
+              value === mode ? "bg-[var(--color-accent)] text-white" : "bg-slate-100 text-slate-600"
+            }`}
+          >
+            {mode === "standard" ? "Стандартная" : "Своя"}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FormulaInputs({
   mode,
+  proteinPerKg,
+  fatPerKg,
+  carbsPerKg,
+  onChange,
+}: {
+  mode: FormulaMode;
+  proteinPerKg: string;
+  fatPerKg: string;
+  carbsPerKg: string;
+  onChange: (value: { proteinPerKg?: string; fatPerKg?: string; carbsPerKg?: string }) => void;
+}) {
+  if (mode === "standard") {
+    return (
+      <div className="rounded-[1.25rem] bg-slate-50 px-4 py-4 text-sm text-slate-600">
+        <div className="font-semibold text-slate-900">Стандартная формула</div>
+        <div className="mt-2">Б {STANDARD_FORMULA.proteinPerKg} / Ж {STANDARD_FORMULA.fatPerKg} / У {STANDARD_FORMULA.carbsPerKg} на кг</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-3 gap-3">
+      <label className="text-sm font-medium text-slate-600">
+        Б / кг
+        <input
+          className={inputClass}
+          type="number"
+          min="0.1"
+          step="0.1"
+          value={proteinPerKg}
+          onChange={(event) => onChange({ proteinPerKg: event.target.value })}
+        />
+      </label>
+      <label className="text-sm font-medium text-slate-600">
+        Ж / кг
+        <input
+          className={inputClass}
+          type="number"
+          min="0.1"
+          step="0.1"
+          value={fatPerKg}
+          onChange={(event) => onChange({ fatPerKg: event.target.value })}
+        />
+      </label>
+      <label className="text-sm font-medium text-slate-600">
+        У / кг
+        <input
+          className={inputClass}
+          type="number"
+          min="0.1"
+          step="0.1"
+          value={carbsPerKg}
+          onChange={(event) => onChange({ carbsPerKg: event.target.value })}
+        />
+      </label>
+    </div>
+  );
+}
+
+function ProfileForm({
   draft,
   onChange,
-  previewKcal,
+  preview,
   valid,
   onSubmit,
   onCancel,
 }: {
-  mode: "create";
   draft: ProfileDraft;
   onChange: (draft: ProfileDraft) => void;
-  previewKcal: number;
+  preview: ReturnType<typeof calculateTargets>;
   valid: boolean;
   onSubmit: () => void;
   onCancel?: () => void;
@@ -316,43 +431,21 @@ function ProfileForm({
         />
       </label>
 
-      <div className="grid grid-cols-3 gap-3">
-        <label className="text-sm font-medium text-slate-600">
-          Б / кг
-          <input
-            className={inputClass}
-            type="number"
-            min="0.1"
-            step="0.1"
-            value={draft.proteinPerKg}
-            onChange={(event) => onChange({ ...draft, proteinPerKg: event.target.value })}
-          />
-        </label>
-        <label className="text-sm font-medium text-slate-600">
-          Ж / кг
-          <input
-            className={inputClass}
-            type="number"
-            min="0.1"
-            step="0.1"
-            value={draft.fatPerKg}
-            onChange={(event) => onChange({ ...draft, fatPerKg: event.target.value })}
-          />
-        </label>
-        <label className="text-sm font-medium text-slate-600">
-          У / кг
-          <input
-            className={inputClass}
-            type="number"
-            min="0.1"
-            step="0.1"
-            value={draft.carbsPerKg}
-            onChange={(event) => onChange({ ...draft, carbsPerKg: event.target.value })}
-          />
-        </label>
-      </div>
+      <FormulaModeSwitch value={draft.formulaMode} onChange={(formulaMode) => onChange({ ...draft, formulaMode })} />
 
-      <div className="rounded-[1.2rem] bg-slate-50 px-4 py-3 text-sm text-slate-600">Предпросмотр цели: {previewKcal} ккал</div>
+      <FormulaInputs
+        mode={draft.formulaMode}
+        proteinPerKg={draft.proteinPerKg}
+        fatPerKg={draft.fatPerKg}
+        carbsPerKg={draft.carbsPerKg}
+        onChange={(changes) => onChange({ ...draft, ...changes })}
+      />
+
+      <div className="rounded-[1.2rem] bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        <div className="font-semibold text-slate-900">Предпросмотр цели</div>
+        <div className="mt-2">{preview.kcal} ккал</div>
+        <div className="mt-1">Б {preview.protein} • Ж {preview.fat} • У {preview.carbs}</div>
+      </div>
 
       <div className="flex items-center gap-3">
         {onCancel ? (
@@ -370,7 +463,7 @@ function ProfileForm({
           onClick={onSubmit}
           className="ml-auto rounded-[1rem] bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
         >
-          {mode === "create" ? "Создать профиль" : "Сохранить"}
+          Создать профиль
         </button>
       </div>
     </div>
@@ -389,6 +482,7 @@ function CurrentProfileForm({
     heightCm?: number;
     weightKg?: number;
     goalWeightKg?: number;
+    formulaMode?: FormulaMode;
     proteinPerKg?: number;
     fatPerKg?: number;
     carbsPerKg?: number;
@@ -446,45 +540,34 @@ function CurrentProfileForm({
           min="1"
           step="0.1"
           value={user.goalWeightKg ?? user.weightKg}
-          onChange={(event) => onUpdate({ goalWeightKg: sanitizeNumber(event.target.value, user.goalWeightKg ?? user.weightKg) })}
+          onChange={(event) =>
+            onUpdate({ goalWeightKg: sanitizeNumber(event.target.value, user.goalWeightKg ?? user.weightKg) })
+          }
         />
       </label>
 
-      <div className="grid grid-cols-3 gap-3">
-        <label className="text-sm font-medium text-slate-600">
-          Б / кг
-          <input
-            className={inputClass}
-            type="number"
-            min="0.1"
-            step="0.1"
-            value={user.proteinPerKg}
-            onChange={(event) => onUpdate({ proteinPerKg: sanitizeNumber(event.target.value, user.proteinPerKg) })}
-          />
-        </label>
-        <label className="text-sm font-medium text-slate-600">
-          Ж / кг
-          <input
-            className={inputClass}
-            type="number"
-            min="0.1"
-            step="0.1"
-            value={user.fatPerKg}
-            onChange={(event) => onUpdate({ fatPerKg: sanitizeNumber(event.target.value, user.fatPerKg) })}
-          />
-        </label>
-        <label className="text-sm font-medium text-slate-600">
-          У / кг
-          <input
-            className={inputClass}
-            type="number"
-            min="0.1"
-            step="0.1"
-            value={user.carbsPerKg}
-            onChange={(event) => onUpdate({ carbsPerKg: sanitizeNumber(event.target.value, user.carbsPerKg) })}
-          />
-        </label>
-      </div>
+      <FormulaModeSwitch value={user.formulaMode} onChange={(formulaMode) => onUpdate({ formulaMode })} />
+
+      <FormulaInputs
+        mode={user.formulaMode}
+        proteinPerKg={String(user.proteinPerKg)}
+        fatPerKg={String(user.fatPerKg)}
+        carbsPerKg={String(user.carbsPerKg)}
+        onChange={(changes) =>
+          onUpdate({
+            proteinPerKg:
+              changes.proteinPerKg === undefined
+                ? undefined
+                : sanitizeNumber(changes.proteinPerKg, user.proteinPerKg),
+            fatPerKg:
+              changes.fatPerKg === undefined ? undefined : sanitizeNumber(changes.fatPerKg, user.fatPerKg),
+            carbsPerKg:
+              changes.carbsPerKg === undefined
+                ? undefined
+                : sanitizeNumber(changes.carbsPerKg, user.carbsPerKg),
+          })
+        }
+      />
 
       {onDelete ? (
         <button
@@ -496,5 +579,16 @@ function CurrentProfileForm({
         </button>
       ) : null}
     </div>
+  );
+}
+
+function BackupNote() {
+  return (
+    <section className="app-card rounded-[2rem] p-5">
+      <h2 className="text-lg font-semibold text-slate-900">Сохранность данных</h2>
+      <p className="mt-2 text-sm leading-6 text-slate-600">
+        Все профили, продукты и дни сохраняются на этом устройстве автоматически. Приложение также делает локальный резервный снимок раз в день, чтобы важные записи не пропали при сбое.
+      </p>
+    </section>
   );
 }

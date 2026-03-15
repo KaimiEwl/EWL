@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ProductAvatar } from "@/components/product-avatar";
 import {
   formatAmountValue,
@@ -24,32 +24,35 @@ export function MealItemRow({
   const currentAmount = getMealItemAmount(row.product, row.item);
   const [draft, setDraft] = useState(formatAmountValue(currentAmount));
 
-  const commitAmount = (value: string) => {
-    const next = Number(value.replace(",", "."));
-    if (!Number.isFinite(next) || next <= 0) {
-      setDraft(formatAmountValue(currentAmount));
-      return;
-    }
+  useEffect(() => {
+    setDraft(formatAmountValue(currentAmount));
+  }, [currentAmount]);
 
-    const normalized = mode === "piece" ? Math.round(next * 10) / 10 : Math.round(next);
-    const nextQuantity = toMealItemQuantity(row.product, normalized);
-    setDraft(formatAmountValue(normalized));
-
-    if (
-      nextQuantity.grams !== row.item.grams ||
-      nextQuantity.quantityMode !== (row.item.quantityMode ?? "grams") ||
-      (nextQuantity.servings ?? null) !== (row.item.servings ?? null)
-    ) {
-      onUpdateQuantity(nextQuantity);
-    }
-  };
+  const currentQuantity = toMealItemQuantity(row.product, currentAmount);
+  const nextAmount = Number(draft.replace(",", "."));
+  const nextQuantity =
+    Number.isFinite(nextAmount) && nextAmount > 0 ? toMealItemQuantity(row.product, nextAmount) : null;
+  const hasChanges = Boolean(
+    nextQuantity &&
+      (nextQuantity.grams !== currentQuantity.grams ||
+        nextQuantity.quantityMode !== currentQuantity.quantityMode ||
+        (nextQuantity.servings ?? null) !== (currentQuantity.servings ?? null)),
+  );
 
   const stepChange = (step: number) => {
     const draftValue = Number(draft.replace(",", "."));
     const baseValue = Number.isFinite(draftValue) && draftValue > 0 ? draftValue : currentAmount;
     const nextValue = Math.max(0.1, Math.round((baseValue + step) * 10) / 10);
     setDraft(formatAmountValue(nextValue));
-    onUpdateQuantity(toMealItemQuantity(row.product, nextValue));
+  };
+
+  const saveDraft = () => {
+    if (!nextQuantity) {
+      setDraft(formatAmountValue(currentAmount));
+      return;
+    }
+
+    onUpdateQuantity(nextQuantity);
   };
 
   const steps = mode === "piece" ? [-1, -0.5, 0.5, 1] : [-10, -5, 5, 10];
@@ -103,19 +106,12 @@ export function MealItemRow({
               {steps[1]}
             </button>
             <input
-              key={`${row.item.id}-${row.item.grams}-${row.item.servings ?? "g"}`}
               type="number"
               min="0.1"
               step={mode === "piece" ? "0.5" : "1"}
               inputMode="decimal"
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              onBlur={() => commitAmount(draft)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.currentTarget.blur();
-                }
-              }}
               className="h-11 min-w-0 rounded-[1rem] border border-[var(--color-outline)] bg-white px-3 text-center text-base font-semibold outline-none"
             />
             <button
@@ -133,6 +129,16 @@ export function MealItemRow({
               +{steps[3]}
             </button>
           </div>
+
+          {hasChanges ? (
+            <button
+              type="button"
+              onClick={saveDraft}
+              className="mt-3 h-11 w-full rounded-[1rem] bg-[var(--color-accent)] px-4 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(243,124,165,0.3)]"
+            >
+              Сохранить
+            </button>
+          ) : null}
         </div>
       </div>
     </div>

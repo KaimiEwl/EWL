@@ -1,4 +1,5 @@
-import type { NutritionTotals, Product, UserProfile } from "@/lib/types";
+import { STANDARD_FORMULA } from "@/lib/constants";
+import type { FormulaCoefficients, NutritionTotals, Product, UserProfile } from "@/lib/types";
 
 export function roundMacro(value: number) {
   return Math.round(value * 10) / 10;
@@ -42,11 +43,24 @@ export function getPlanningWeight(profile: UserProfile) {
   return Math.min(profile.weightKg, safeGoal);
 }
 
+export function resolveProfileFormula(profile: Pick<UserProfile, "formulaMode" | "proteinPerKg" | "fatPerKg" | "carbsPerKg">): FormulaCoefficients {
+  if (profile.formulaMode === "standard") {
+    return STANDARD_FORMULA;
+  }
+
+  return {
+    proteinPerKg: profile.proteinPerKg,
+    fatPerKg: profile.fatPerKg,
+    carbsPerKg: profile.carbsPerKg,
+  };
+}
+
 export function calculateTargets(profile: UserProfile): NutritionTotals {
   const baseWeight = getPlanningWeight(profile);
-  const protein = roundMacro(baseWeight * profile.proteinPerKg);
-  const fat = roundMacro(baseWeight * profile.fatPerKg);
-  const carbs = roundMacro(baseWeight * profile.carbsPerKg);
+  const coefficients = resolveProfileFormula(profile);
+  const protein = roundMacro(baseWeight * coefficients.proteinPerKg);
+  const fat = roundMacro(baseWeight * coefficients.fatPerKg);
+  const carbs = roundMacro(baseWeight * coefficients.carbsPerKg);
 
   return {
     protein,

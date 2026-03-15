@@ -46,6 +46,7 @@ export function TodayScreen() {
   const recentProducts = getRecentProducts(state, user.id);
   const kcalBalance = summary.balance?.kcal ?? 0;
   const kcalOver = kcalBalance < 0;
+  const mealCandidates = mealOrder;
 
   return (
     <div className="space-y-4">
@@ -114,7 +115,7 @@ export function TodayScreen() {
           </Link>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3">
-          {mealOrder.map((mealType) => (
+          {mealCandidates.map((mealType) => (
             <button
               key={mealType}
               type="button"

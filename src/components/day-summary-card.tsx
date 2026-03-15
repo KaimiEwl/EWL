@@ -1,9 +1,8 @@
-import { mealLabels, mealOrder } from "@/lib/constants";
-import { getItemsByMeal, getMealTotals } from "@/lib/selectors";
+import { getMealSections, getMealTotals } from "@/lib/selectors";
 import type { DaySummary } from "@/lib/types";
 
 export function DaySummaryCard({ summary }: { summary: DaySummary }) {
-  const itemsByMeal = getItemsByMeal(summary);
+  const sections = getMealSections(summary);
 
   return (
     <div className="app-card rounded-[2rem] p-5">
@@ -25,15 +24,14 @@ export function DaySummaryCard({ summary }: { summary: DaySummary }) {
         ) : null}
       </div>
       <div className="mt-5 grid gap-3">
-        {mealOrder.map((mealType) => {
-          const rows = itemsByMeal[mealType];
-          const totals = getMealTotals(rows);
+        {sections.map((section) => {
+          const totals = getMealTotals(section.rows);
           return (
-            <div key={mealType} className="flex items-center justify-between rounded-[1.4rem] bg-white/75 px-4 py-3">
+            <div key={section.id} className="flex items-center justify-between rounded-[1.4rem] bg-white/75 px-4 py-3">
               <div>
-                <p className="text-sm font-semibold text-slate-800">{mealLabels[mealType]}</p>
+                <p className="text-sm font-semibold text-slate-800">{section.label}</p>
                 <p className="mt-1 text-xs text-slate-500">
-                  {rows.length ? `${rows.length} поз. • ${totals.kcal} ккал` : "Пока пусто"}
+                  {section.rows.length ? `${section.rows.length} поз. • ${totals.kcal} ккал` : "Пока пусто"}
                 </p>
               </div>
               <div className="text-right text-xs leading-5 text-slate-500">

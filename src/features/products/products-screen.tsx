@@ -25,22 +25,19 @@ export function ProductsScreen() {
   return (
     <div className="space-y-4">
       <section className="rounded-[2rem] bg-[linear-gradient(150deg,#fff9f5_0%,#edf9ff_50%,#ffe9f1_100%)] px-5 py-5 shadow-[0_18px_50px_rgba(123,139,146,0.16)]">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Products</p>
-            <h1 className="mt-2 text-2xl font-semibold text-slate-900">База продуктов</h1>
-            <p className="mt-2 text-sm leading-6 text-slate-700">
-              Здесь лежит весь каталог из таблицы и ваши локальные продукты. Можно редактировать, добавлять и убирать лишнее.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setEditorState({ mode: "create" })}
-            className="rounded-[1rem] bg-[var(--color-accent)] px-4 py-3 text-sm font-semibold text-white"
-          >
-            + Добавить
-          </button>
-        </div>
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Продукты</p>
+        <h1 className="mt-2 text-2xl font-semibold text-slate-900">База продуктов</h1>
+        <p className="mt-2 text-sm leading-6 text-slate-700">
+          Здесь хранится весь каталог: база из таблицы и ваши собственные продукты.
+        </p>
+
+        <button
+          type="button"
+          onClick={() => setEditorState({ mode: "create" })}
+          className="mt-4 flex min-h-12 w-full items-center justify-center rounded-[1.2rem] bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(243,124,165,0.3)]"
+        >
+          Добавить
+        </button>
 
         <div className="mt-4 grid grid-cols-2 gap-3">
           <div className="rounded-[1.25rem] bg-white/90 px-4 py-4">
@@ -75,31 +72,11 @@ export function ProductsScreen() {
                 <div className="flex items-start gap-3">
                   <ProductAvatar icon={product.icon} name={product.name} />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <h2 className="truncate text-base font-semibold text-slate-900">{product.name}</h2>
-                        <p className="mt-1 text-xs text-slate-500">
-                          Б {product.proteinPer100} • Ж {product.fatPer100} • У {product.carbsPer100} •{" "}
-                          {product.kcalPer100 ?? "auto"} ккал
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setEditorState({ mode: "edit", product })}
-                          className="rounded-full bg-white px-3 py-2 text-xs font-semibold text-slate-700"
-                        >
-                          Править
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => deleteProduct(product.id)}
-                          className="rounded-full bg-[var(--color-danger-soft)] px-3 py-2 text-xs font-semibold text-[var(--color-danger)]"
-                        >
-                          Убрать
-                        </button>
-                      </div>
-                    </div>
+                    <h2 className="text-base font-semibold text-slate-900">{product.name}</h2>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Б {product.proteinPer100} • Ж {product.fatPer100} • У {product.carbsPer100} •{" "}
+                      {product.kcalPer100 ?? "auto"} ккал
+                    </p>
 
                     <div className="mt-3 flex flex-wrap gap-2 text-xs">
                       <span className="rounded-full bg-[var(--color-mint-soft)] px-3 py-1.5 font-semibold text-[var(--color-mint)]">
@@ -113,6 +90,23 @@ export function ProductsScreen() {
                       {usageCount ? (
                         <span className="rounded-full bg-white px-3 py-1.5 text-slate-500">Использован {usageCount} раз</span>
                       ) : null}
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditorState({ mode: "edit", product })}
+                        className="min-h-11 rounded-[1rem] bg-white px-4 py-3 text-sm font-semibold text-slate-700"
+                      >
+                        Править
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteProduct(product.id)}
+                        className="min-h-11 rounded-[1rem] bg-[var(--color-danger-soft)] px-4 py-3 text-sm font-semibold text-[var(--color-danger)]"
+                      >
+                        Убрать
+                      </button>
                     </div>
                   </div>
                 </div>

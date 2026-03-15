@@ -1,5 +1,5 @@
 import { mergeBuiltInProducts } from "@/lib/base-products";
-import { STATE_VERSION, STORAGE_KEY } from "@/lib/constants";
+import { BACKUP_STORAGE_KEY, MAX_LOCAL_BACKUPS, STATE_VERSION, STORAGE_KEY } from "@/lib/constants";
 import { buildSeedState } from "@/lib/seed";
 import type { PersistedAppState } from "@/lib/types";
 
@@ -7,6 +7,13 @@ export interface AppRepository {
   load: () => Promise<PersistedAppState>;
   save: (state: PersistedAppState) => Promise<void>;
 }
+
+type BackupSnapshot = {
+  id: string;
+  dayKey: string;
+  createdAt: string;
+  state: PersistedAppState;
+};
 
 function isPersistedState(value: unknown): value is PersistedAppState {
   if (!value || typeof value !== "object") {
@@ -34,7 +41,73 @@ function migrateState(state: PersistedAppState): PersistedAppState {
     ...state,
     version: STATE_VERSION,
     products: mergeBuiltInProducts(state.products),
+    profiles: state.profiles.map((profile) => ({
+      ...profile,
+      formulaMode: profile.formulaMode ?? "custom",
+      heightCm: profile.heightCm ?? null,
+      goalWeightKg: profile.goalWeightKg ?? profile.weightKg,
+    })),
   };
+}
+
+function readBackupSnapshots() {
+  if (typeof window === "undefined") {
+    return [] as BackupSnapshot[];
+  }
+
+  try {
+    const raw = window.localStorage.getItem(BACKUP_STORAGE_KEY);
+    if (!raw) {
+      return [];
+    }
+
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.filter((item): item is BackupSnapshot => {
+      if (!item || typeof item !== "object") {
+        return false;
+      }
+
+      const candidate = item as BackupSnapshot;
+      return Boolean(candidate.id && candidate.dayKey && candidate.createdAt && isPersistedState(candidate.state));
+    });
+  } catch {
+    return [];
+  }
+}
+
+function getBackupState(state: PersistedAppState): PersistedAppState {
+  return {
+    ...state,
+    products: state.products.filter((product) => product.isCustom || product.archivedAt),
+  };
+}
+
+function saveBackupSnapshot(state: PersistedAppState) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const createdAt = new Date().toISOString();
+  const dayKey = createdAt.slice(0, 10);
+  const nextSnapshot: BackupSnapshot = {
+    id: `backup-${dayKey}`,
+    dayKey,
+    createdAt,
+    state: getBackupState(state),
+  };
+
+  const existing = readBackupSnapshots().filter((snapshot) => snapshot.dayKey !== dayKey);
+  const nextSnapshots = [nextSnapshot, ...existing].slice(0, MAX_LOCAL_BACKUPS);
+  window.localStorage.setItem(BACKUP_STORAGE_KEY, JSON.stringify(nextSnapshots));
+}
+
+function getLatestBackupState() {
+  const [latest] = readBackupSnapshots();
+  return latest?.state ?? null;
 }
 
 export const localAppRepository: AppRepository = {
@@ -45,7 +118,8 @@ export const localAppRepository: AppRepository = {
 
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      return buildSeedState();
+      const backupState = getLatestBackupState();
+      return backupState ? migrateState(backupState) : buildSeedState();
     }
 
     try {
@@ -54,10 +128,12 @@ export const localAppRepository: AppRepository = {
         return migrateState(parsed);
       }
     } catch {
-      return buildSeedState();
+      const backupState = getLatestBackupState();
+      return backupState ? migrateState(backupState) : buildSeedState();
     }
 
-    return buildSeedState();
+    const backupState = getLatestBackupState();
+    return backupState ? migrateState(backupState) : buildSeedState();
   },
   async save(state) {
     if (typeof window === "undefined") {
@@ -65,5 +141,6 @@ export const localAppRepository: AppRepository = {
     }
 
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    saveBackupSnapshot(state);
   },
 };

@@ -1,8 +1,12 @@
 export type Sex = "female" | "male";
 
-export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
+export type MealType = "breakfast" | "lunch" | "dinner" | "snack" | "custom";
+
+export type BuiltInMealType = Exclude<MealType, "custom">;
 
 export type QuantityMode = "grams" | "piece";
+
+export type FormulaMode = "standard" | "custom";
 
 export interface UserProfile {
   id: string;
@@ -11,6 +15,7 @@ export interface UserProfile {
   heightCm?: number | null;
   weightKg: number;
   goalWeightKg?: number | null;
+  formulaMode: FormulaMode;
   proteinPerKg: number;
   fatPerKg: number;
   carbsPerKg: number;
@@ -50,6 +55,7 @@ export interface MealItem {
   id: string;
   dayEntryId: string;
   mealType: MealType;
+  mealLabel?: string;
   productId: string;
   grams: number;
   quantityMode?: QuantityMode;
@@ -100,4 +106,10 @@ export interface ProductDraft {
   unitMode: QuantityMode;
   unitLabel: string;
   gramsPerUnit: string;
+}
+
+export interface FormulaCoefficients {
+  proteinPerKg: number;
+  fatPerKg: number;
+  carbsPerKg: number;
 }
