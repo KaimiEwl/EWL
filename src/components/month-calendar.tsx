@@ -36,7 +36,7 @@ export function MonthCalendar({
         <button
           type="button"
           onClick={() => onChangeMonth(-1)}
-          className="rounded-full bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+          className="theme-elevated rounded-full px-3 py-2 text-sm font-semibold text-slate-700"
         >
           Назад
         </button>
@@ -46,7 +46,7 @@ export function MonthCalendar({
         <button
           type="button"
           onClick={() => onChangeMonth(1)}
-          className="rounded-full bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+          className="theme-elevated rounded-full px-3 py-2 text-sm font-semibold text-slate-700"
         >
           Вперёд
         </button>
@@ -61,10 +61,10 @@ export function MonthCalendar({
           const state = summaryMap.get(cell.dateKey);
           const selected = selectedDate === cell.dateKey;
           const baseClass = !state?.hasItems
-            ? "bg-white text-slate-400"
+            ? "theme-elevated text-slate-400"
             : state.isOver
-              ? "bg-[var(--color-danger-soft)] text-[var(--color-danger)]"
-              : "bg-[var(--color-mint-soft)] text-[var(--color-mint)]";
+              ? "theme-status-warning"
+              : "theme-completed";
 
           return (
             <button
@@ -72,7 +72,7 @@ export function MonthCalendar({
               type="button"
               onClick={() => onSelectDate(cell.dateKey)}
               className={`relative aspect-square rounded-[1rem] text-sm font-semibold transition ${
-                cell.inCurrentMonth ? baseClass : "bg-white/55 text-slate-300"
+                cell.inCurrentMonth ? baseClass : "theme-subtle text-slate-300"
               } ${selected ? "ring-2 ring-[var(--color-accent)] ring-offset-2 ring-offset-[#f8f7f1]" : ""}`}
             >
               <span className={selected ? "font-bold" : ""}>{cell.day}</span>

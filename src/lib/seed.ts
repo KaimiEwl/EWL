@@ -5,6 +5,7 @@ import type { PersistedAppState } from "@/lib/types";
 export function buildSeedState(): PersistedAppState {
   return {
     version: STATE_VERSION,
+    themeMode: "rose",
     selectedUserId: "",
     profiles: [],
     products: buildBaseProducts(),

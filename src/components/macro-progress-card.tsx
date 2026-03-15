@@ -41,7 +41,7 @@ export function MacroProgressCard({
             <span className="ml-1 text-sm font-medium text-slate-500">{unit}</span>
           </p>
         </div>
-        <div className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
+        <div className="theme-elevated rounded-full px-2.5 py-1 text-xs font-semibold text-slate-600">
           {target}
           {unit}
         </div>

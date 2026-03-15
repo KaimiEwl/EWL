@@ -41,6 +41,7 @@ function migrateState(state: PersistedAppState): PersistedAppState {
   return {
     ...state,
     version: STATE_VERSION,
+    themeMode: state.themeMode === "beige" ? "beige" : "rose",
     products: mergeBuiltInProducts(state.products),
     profiles: state.profiles.map((profile) => ({
       ...profile,

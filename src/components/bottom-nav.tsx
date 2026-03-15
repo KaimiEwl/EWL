@@ -56,7 +56,7 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 mx-auto w-[calc(100%-2rem)] max-w-md rounded-[2rem] border border-white/60 bg-white/92 p-2 shadow-[0_20px_50px_rgba(115,127,132,0.18)] backdrop-blur">
+    <nav className="theme-nav fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 mx-auto w-[calc(100%-2rem)] max-w-md rounded-[2rem] p-2 backdrop-blur">
       <ul className="grid grid-cols-4 gap-2">
         {tabs.map((tab) => {
           const active = pathname === tab.href;
@@ -67,7 +67,7 @@ export function BottomNav() {
                 href={tab.href}
                 className={`flex min-h-14 flex-col items-center justify-center rounded-[1.35rem] px-2 py-2 text-[11px] font-semibold transition ${
                   active
-                    ? "bg-[var(--color-accent)] text-white shadow-[0_14px_28px_rgba(239,93,141,0.36)]"
+                    ? "theme-switcher-tab-active text-white"
                     : "text-slate-600"
                 }`}
               >

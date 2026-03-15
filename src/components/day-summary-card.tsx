@@ -15,8 +15,8 @@ export function DaySummaryCard({ summary }: { summary: DaySummary }) {
           <div
             className={`rounded-full px-3 py-2 text-sm font-semibold ${
               summary.balance.kcal < 0
-                ? "bg-[var(--color-danger-soft)] text-[var(--color-danger)]"
-                : "bg-[var(--color-mint-soft)] text-[var(--color-mint)]"
+                ? "theme-status-warning"
+                : "theme-important"
             }`}
           >
             {summary.balance.kcal < 0 ? `+${Math.abs(summary.balance.kcal)}` : summary.balance.kcal} ккал
@@ -27,7 +27,7 @@ export function DaySummaryCard({ summary }: { summary: DaySummary }) {
         {sections.map((section) => {
           const totals = getMealTotals(section.rows);
           return (
-            <div key={section.id} className="flex items-center justify-between rounded-[1.4rem] bg-white/75 px-4 py-3">
+            <div key={section.id} className={`flex items-center justify-between rounded-[1.4rem] px-4 py-3 ${section.rows.length ? "theme-completed" : "theme-elevated"}`}>
               <div>
                 <p className="text-sm font-semibold text-slate-800">{section.label}</p>
                 <p className="mt-1 text-xs text-slate-500">

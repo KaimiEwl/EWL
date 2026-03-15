@@ -5,6 +5,7 @@ export type MealType = "breakfast" | "lunch" | "dinner" | "snack" | "custom";
 export type BuiltInMealType = Exclude<MealType, "custom">;
 
 export type QuantityMode = "grams" | "piece";
+export type ThemeMode = "rose" | "beige";
 
 export type FormulaMode = "lose" | "maintain" | "gain" | "custom";
 
@@ -74,6 +75,7 @@ export interface NutritionTotals {
 
 export interface PersistedAppState {
   version: number;
+  themeMode: ThemeMode;
   selectedUserId: string;
   profiles: UserProfile[];
   products: Product[];

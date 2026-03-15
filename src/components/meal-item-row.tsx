@@ -71,13 +71,13 @@ export function MealItemRow({
                     Свой продукт
                   </span>
                 ) : null}
-                <span className="rounded-full bg-slate-100 px-2 py-1">{row.nutrition.kcal} ккал</span>
+                <span className="theme-elevated rounded-full px-2 py-1">{row.nutrition.kcal} ккал</span>
               </div>
             </div>
             <button
               type="button"
               onClick={onDelete}
-              className="rounded-full bg-[var(--color-danger-soft)] px-3 py-1.5 text-xs font-semibold text-[var(--color-danger)]"
+              className="theme-status-warning rounded-full px-3 py-1.5 text-xs font-semibold"
             >
               Удалить
             </button>
@@ -117,14 +117,14 @@ export function MealItemRow({
             <button
               type="button"
               onClick={() => stepChange(steps[2])}
-              className="h-11 rounded-[1rem] bg-[var(--color-mint-soft)] px-3 text-sm font-semibold text-[var(--color-mint)]"
+              className="theme-status-positive h-11 rounded-[1rem] px-3 text-sm font-semibold"
             >
               +{steps[2]}
             </button>
             <button
               type="button"
               onClick={() => stepChange(steps[3])}
-              className="h-11 rounded-[1rem] bg-[var(--color-mint-soft)] px-3 text-sm font-semibold text-[var(--color-mint)]"
+              className="theme-status-positive h-11 rounded-[1rem] px-3 text-sm font-semibold"
             >
               +{steps[3]}
             </button>
@@ -134,7 +134,7 @@ export function MealItemRow({
             <button
               type="button"
               onClick={saveDraft}
-              className="mt-3 h-11 w-full rounded-[1rem] bg-[var(--color-accent)] px-4 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(243,124,165,0.3)]"
+              className="theme-accent-button mt-3 h-11 w-full rounded-[1rem] px-4 text-sm font-semibold"
             >
               Сохранить
             </button>

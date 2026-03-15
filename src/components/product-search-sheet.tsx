@@ -89,8 +89,8 @@ export function ProductSearchSheet({
         key={product.id}
         className={`w-full rounded-[1.35rem] border px-3 py-3 text-left transition ${
           active
-            ? "border-transparent bg-[var(--color-mint-soft)] shadow-[0_10px_24px_rgba(82,199,186,0.18)]"
-            : "border-[var(--color-outline)] bg-white"
+            ? "border-transparent theme-important"
+            : "border-[var(--color-outline)] theme-elevated"
         }`}
       >
         <div className="flex items-center gap-3">
@@ -122,7 +122,7 @@ export function ProductSearchSheet({
                   </span>
                 ) : null}
                 {active ? (
-                  <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-[var(--color-mint)]">
+                  <span className="theme-completed rounded-full px-2.5 py-1 text-[11px] font-semibold">
                     Выбрано
                   </span>
                 ) : null}
@@ -133,7 +133,7 @@ export function ProductSearchSheet({
             <button
               type="button"
               onClick={() => setEditorState({ mode: "edit", product })}
-              className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-600"
+              className="theme-elevated rounded-full px-3 py-1.5 text-xs font-semibold text-slate-600"
             >
               Править
             </button>
@@ -145,7 +145,7 @@ export function ProductSearchSheet({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-end bg-slate-900/30 p-3">
+      <div className="theme-overlay fixed inset-0 z-50 flex items-end p-3">
         <div className="flex max-h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-[2rem] bg-[#fffdfa] shadow-[0_20px_60px_rgba(35,43,53,0.2)]">
           <div className="px-4 pb-4 pt-4">
             <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-slate-200" />
@@ -157,7 +157,7 @@ export function ProductSearchSheet({
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-full bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-600"
+                className="theme-elevated rounded-full px-3 py-2 text-sm font-semibold text-slate-600"
               >
                 Закрыть
               </button>
@@ -168,7 +168,7 @@ export function ProductSearchSheet({
               placeholder="Найти продукт"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              className="mt-4 h-12 w-full rounded-[1rem] border border-[var(--color-outline)] bg-white px-4 outline-none"
+              className="theme-input mt-4 h-12 w-full rounded-[1rem] border border-[var(--color-outline)] px-4 outline-none"
             />
 
             <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
@@ -183,7 +183,7 @@ export function ProductSearchSheet({
                     }
                   }}
                   className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                    mealType === candidate ? "bg-[var(--color-accent)] text-white" : "bg-slate-100 text-slate-600"
+                    mealType === candidate ? "theme-switcher-tab-active text-white" : "bg-slate-100 text-slate-600"
                   }`}
                 >
                   {candidate === "custom" ? "Свой прием" : mealLabels[candidate]}
@@ -196,7 +196,7 @@ export function ProductSearchSheet({
                 value={mealLabel}
                 onChange={(event) => setMealLabel(event.target.value)}
                 placeholder="Название приема пищи"
-                className="mt-3 h-12 w-full rounded-[1rem] border border-[var(--color-outline)] bg-white px-4 outline-none"
+                className="theme-input mt-3 h-12 w-full rounded-[1rem] border border-[var(--color-outline)] px-4 outline-none"
               />
             ) : null}
           </div>
@@ -241,7 +241,7 @@ export function ProductSearchSheet({
           </div>
 
           <div className="border-t border-[var(--color-outline)] bg-[#fffdfa] px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4">
-            <div className="rounded-[1.25rem] bg-white px-4 py-3">
+            <div className="theme-elevated rounded-[1.25rem] px-4 py-3">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.18em] text-slate-400">
@@ -254,7 +254,7 @@ export function ProductSearchSheet({
                   </p>
                 </div>
                 {selectedProduct ? (
-                  <div className="rounded-full bg-[var(--color-mint-soft)] px-3 py-2 text-xs font-semibold text-[var(--color-mint)]">
+                  <div className="theme-important rounded-full px-3 py-2 text-xs font-semibold">
                     {selectedMode === "piece" ? unitLabel : "граммы"}
                   </div>
                 ) : null}
@@ -268,7 +268,7 @@ export function ProductSearchSheet({
                   inputMode="decimal"
                   value={amount}
                   onChange={(event) => setAmount(event.target.value)}
-                  className="h-12 min-w-0 flex-1 rounded-[1rem] border border-[var(--color-outline)] bg-white px-4 outline-none"
+                  className="theme-input h-12 min-w-0 flex-1 rounded-[1rem] border border-[var(--color-outline)] px-4 outline-none"
                 />
                 <button
                   type="button"
@@ -286,7 +286,7 @@ export function ProductSearchSheet({
                     onClose();
                   }}
                   disabled={!canSubmit}
-                  className="min-w-[132px] rounded-[1rem] bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(243,124,165,0.32)] disabled:cursor-not-allowed disabled:opacity-45"
+                  className="theme-accent-button min-w-[132px] rounded-[1rem] px-5 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   Добавить
                 </button>
@@ -299,7 +299,7 @@ export function ProductSearchSheet({
                     onClick={() => setAmount(String(quickAmount))}
                     className={`rounded-full px-3 py-2 text-xs font-semibold ${
                       Number(amount.replace(",", ".")) === quickAmount
-                        ? "bg-[var(--color-accent)] text-white"
+                        ? "theme-switcher-tab-active text-white"
                         : "bg-slate-100 text-slate-600"
                     }`}
                   >

@@ -13,6 +13,7 @@ import type {
   ProductDraft,
   QuantityMode,
   Sex,
+  ThemeMode,
   UserProfile,
 } from "@/lib/types";
 
@@ -39,6 +40,7 @@ type ProductInput = {
 
 type Action =
   | { type: "hydrate"; payload: PersistedAppState }
+  | { type: "setThemeMode"; payload: ThemeMode }
   | { type: "setSelectedUser"; payload: string }
   | {
       type: "addMealItem";
@@ -75,6 +77,7 @@ type Action =
 function createEmptyState(): HydratedState {
   return {
     version: STATE_VERSION,
+    themeMode: "rose",
     selectedUserId: "",
     profiles: [],
     products: [],
@@ -92,6 +95,7 @@ function createId(prefix: string) {
 function normalizeState(payload: PersistedAppState): PersistedAppState {
   return {
     ...payload,
+    themeMode: payload.themeMode === "beige" ? "beige" : "rose",
     recentProductsByUser: payload.recentProductsByUser ?? {},
     profiles: payload.profiles.map((profile) => ({
       ...profile,
@@ -178,6 +182,11 @@ function reducer(state: HydratedState, action: Action): HydratedState {
       return {
         ...normalizeState(action.payload),
         hydrated: true,
+      };
+    case "setThemeMode":
+      return {
+        ...state,
+        themeMode: action.payload,
       };
     case "setSelectedUser":
       return {
@@ -369,6 +378,7 @@ function reducer(state: HydratedState, action: Action): HydratedState {
 
 type StoreValue = {
   state: HydratedState;
+  setThemeMode: (themeMode: ThemeMode) => void;
   setSelectedUser: (userId: string) => void;
   addMealItem: (payload: {
     userId: string;
@@ -423,6 +433,7 @@ export function AppStoreProvider({ children }: Readonly<{ children: React.ReactN
 
     void localAppRepository.save({
       version: state.version,
+      themeMode: state.themeMode,
       selectedUserId: state.selectedUserId,
       profiles: state.profiles,
       products: state.products,
@@ -436,6 +447,7 @@ export function AppStoreProvider({ children }: Readonly<{ children: React.ReactN
     <AppStoreContext.Provider
       value={{
         state,
+        setThemeMode: (themeMode) => dispatch({ type: "setThemeMode", payload: themeMode }),
         setSelectedUser: (userId) => dispatch({ type: "setSelectedUser", payload: userId }),
         addMealItem: (payload) => dispatch({ type: "addMealItem", payload }),
         updateMealItem: (payload) => dispatch({ type: "updateMealItem", payload }),

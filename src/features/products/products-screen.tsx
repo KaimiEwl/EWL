@@ -24,7 +24,7 @@ export function ProductsScreen() {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-[2rem] bg-[linear-gradient(150deg,#fff9f5_0%,#edf9ff_50%,#ffe9f1_100%)] px-5 py-5 shadow-[0_18px_50px_rgba(123,139,146,0.16)]">
+      <section className="theme-catalog rounded-[2rem] px-5 py-5">
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Продукты</p>
         <h1 className="mt-2 text-2xl font-semibold text-slate-900">База продуктов</h1>
         <p className="mt-2 text-sm leading-6 text-slate-700">
@@ -34,7 +34,7 @@ export function ProductsScreen() {
         <button
           type="button"
           onClick={() => setEditorState({ mode: "create" })}
-          className="mt-4 flex min-h-12 w-full items-center justify-center rounded-[1.2rem] bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(243,124,165,0.3)]"
+          className="theme-accent-button mt-4 flex min-h-12 w-full items-center justify-center rounded-[1.2rem] px-5 py-3 text-sm font-semibold"
         >
           Добавить
         </button>
@@ -57,7 +57,7 @@ export function ProductsScreen() {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Найти курочку, пиццу, рис, чокопай..."
-          className="h-12 w-full rounded-[1rem] border border-[var(--color-outline)] bg-white px-4 outline-none"
+          className="theme-input h-12 w-full rounded-[1rem] border border-[var(--color-outline)] px-4 outline-none"
         />
       </section>
 
@@ -79,7 +79,7 @@ export function ProductsScreen() {
                     </p>
 
                     <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                      <span className="rounded-full bg-[var(--color-mint-soft)] px-3 py-1.5 font-semibold text-[var(--color-mint)]">
+                      <span className="theme-completed rounded-full px-3 py-1.5 font-semibold">
                         {quantityMode === "piece"
                           ? `По штукам • 1 ${getProductUnitLabel(product)} = ${product.gramsPerUnit ?? 0} г`
                           : "По граммам"}
@@ -88,7 +88,7 @@ export function ProductsScreen() {
                         <span className="rounded-full bg-slate-100 px-3 py-1.5 text-slate-600">{product.notes}</span>
                       ) : null}
                       {usageCount ? (
-                        <span className="rounded-full bg-white px-3 py-1.5 text-slate-500">Использован {usageCount} раз</span>
+                        <span className="theme-elevated rounded-full px-3 py-1.5 text-slate-500">Использован {usageCount} раз</span>
                       ) : null}
                     </div>
 
@@ -96,14 +96,14 @@ export function ProductsScreen() {
                       <button
                         type="button"
                         onClick={() => setEditorState({ mode: "edit", product })}
-                        className="min-h-11 rounded-[1rem] bg-white px-4 py-3 text-sm font-semibold text-slate-700"
+                        className="theme-elevated min-h-11 rounded-[1rem] px-4 py-3 text-sm font-semibold text-slate-700"
                       >
                         Править
                       </button>
                       <button
                         type="button"
                         onClick={() => deleteProduct(product.id)}
-                        className="min-h-11 rounded-[1rem] bg-[var(--color-danger-soft)] px-4 py-3 text-sm font-semibold text-[var(--color-danger)]"
+                        className="theme-status-warning min-h-11 rounded-[1rem] px-4 py-3 text-sm font-semibold"
                       >
                         Убрать
                       </button>
@@ -122,7 +122,7 @@ export function ProductsScreen() {
             <button
               type="button"
               onClick={() => setEditorState({ mode: "create" })}
-              className="rounded-[1rem] bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-white"
+              className="theme-accent-button rounded-[1rem] px-5 py-3 text-sm font-semibold"
             >
               Добавить продукт
             </button>

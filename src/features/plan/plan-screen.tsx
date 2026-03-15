@@ -20,13 +20,7 @@ import { useAppStore } from "@/store/app-store";
 function BalanceBadge({ value }: { value: number }) {
   const over = value < 0;
   return (
-    <div
-      className={`rounded-[1.1rem] px-3 py-2 text-sm font-semibold ${
-        over
-          ? "bg-[var(--color-danger-soft)] text-[var(--color-danger)]"
-          : "bg-[var(--color-mint-soft)] text-[var(--color-mint)]"
-      }`}
-    >
+        <div className={`rounded-[1.1rem] px-3 py-2 text-sm font-semibold ${over ? "theme-status-warning" : "theme-important"}`}>
       {over ? `+${Math.abs(value)}` : value}
     </div>
   );
@@ -78,7 +72,7 @@ export function PlanScreen({ initialDateParam }: { initialDateParam?: string }) 
 
   return (
     <div className="space-y-4">
-      <section className="rounded-[2rem] bg-[linear-gradient(155deg,#fffef9_0%,#f3fbff_45%,#fff1f6_100%)] px-5 py-5 shadow-[0_18px_52px_rgba(122,138,144,0.15)]">
+      <section className="theme-panel rounded-[2rem] px-5 py-5">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">День</p>
@@ -87,19 +81,19 @@ export function PlanScreen({ initialDateParam }: { initialDateParam?: string }) 
           {summary.balance ? <BalanceBadge value={summary.balance.kcal} /> : null}
         </div>
         <div className="mt-4 grid grid-cols-3 gap-2">
-          <div className="rounded-[1.3rem] bg-white/88 px-3 py-3">
+          <div className="theme-elevated rounded-[1.3rem] px-3 py-3">
             <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">Цель</div>
             <div className="mt-1 text-lg font-semibold text-slate-900">{summary.target?.kcal ?? 0}</div>
           </div>
-          <div className="rounded-[1.3rem] bg-white/88 px-3 py-3">
+          <div className="theme-elevated rounded-[1.3rem] px-3 py-3">
             <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">Съедено</div>
             <div className="mt-1 text-lg font-semibold text-slate-900">{summary.totals.kcal}</div>
           </div>
-          <div className="rounded-[1.3rem] bg-white/88 px-3 py-3">
+          <div className="theme-important rounded-[1.3rem] px-3 py-3">
             <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">Осталось</div>
             <div
               className={`mt-1 text-lg font-semibold ${
-                summary.balance && summary.balance.kcal < 0 ? "text-[var(--color-danger)]" : "text-[var(--color-mint)]"
+                summary.balance && summary.balance.kcal < 0 ? "text-[var(--color-danger)]" : "text-[var(--color-important-text)]"
               }`}
             >
               {summary.balance?.kcal ?? 0}
@@ -108,7 +102,7 @@ export function PlanScreen({ initialDateParam }: { initialDateParam?: string }) 
         </div>
 
         {daySuggestion ? (
-          <div className="mt-4 rounded-[1.35rem] bg-white/88 px-4 py-4">
+          <div className="theme-important mt-4 rounded-[1.35rem] px-4 py-4">
             <div className="text-sm font-semibold text-slate-900">{daySuggestion.title}</div>
             <div className="mt-1 text-sm leading-6 text-slate-600">{daySuggestion.description}</div>
           </div>
@@ -134,7 +128,7 @@ export function PlanScreen({ initialDateParam }: { initialDateParam?: string }) 
             value={newMealLabel}
             onChange={(event) => setNewMealLabel(event.target.value)}
             placeholder="Название приема пищи"
-            className="h-12 min-w-0 flex-1 rounded-[1rem] border border-[var(--color-outline)] bg-white px-4 outline-none"
+            className="theme-input h-12 min-w-0 flex-1 rounded-[1rem] border border-[var(--color-outline)] px-4 outline-none"
           />
           <button
             type="button"
@@ -143,7 +137,7 @@ export function PlanScreen({ initialDateParam }: { initialDateParam?: string }) 
               openMealSheet("custom", newMealLabel.trim());
               setNewMealLabel("");
             }}
-            className="rounded-[1rem] bg-[var(--color-accent)] px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
+            className="theme-accent-button rounded-[1rem] px-4 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-45"
           >
             +
           </button>

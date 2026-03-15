@@ -50,7 +50,7 @@ export function TodayScreen() {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-[2.3rem] bg-[linear-gradient(160deg,#fffdf8_0%,#f1fdf6_52%,#ffeef4_100%)] px-5 py-6 shadow-[0_20px_60px_rgba(129,143,151,0.16)]">
+      <section className="theme-hero rounded-[2.3rem] px-5 py-6">
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Today</p>
         <div className="mt-3 flex items-start justify-between gap-4">
           <div>
@@ -59,9 +59,7 @@ export function TodayScreen() {
           </div>
           <div
             className={`rounded-[1.5rem] px-4 py-3 text-right ${
-              kcalOver
-                ? "bg-[var(--color-danger-soft)] text-[var(--color-danger)]"
-                : "bg-[var(--color-mint-soft)] text-[var(--color-mint)]"
+              kcalOver ? "theme-status-warning" : "theme-important"
             }`}
           >
             <div className="text-xs font-semibold uppercase tracking-[0.16em]">
@@ -72,17 +70,17 @@ export function TodayScreen() {
         </div>
 
         <div className="mt-5 grid grid-cols-3 gap-3">
-          <div className="rounded-[1.35rem] bg-white/82 px-4 py-4">
+          <div className="theme-elevated rounded-[1.35rem] px-4 py-4">
             <div className="text-xs uppercase tracking-[0.16em] text-slate-400">Сегодня съедено</div>
             <div className="mt-2 text-xl font-semibold text-slate-900">{summary.totals.kcal}</div>
           </div>
-          <div className="rounded-[1.35rem] bg-white/82 px-4 py-4">
+          <div className="theme-important rounded-[1.35rem] px-4 py-4">
             <div className="text-xs uppercase tracking-[0.16em] text-slate-400">Осталось</div>
-            <div className={`mt-2 text-xl font-semibold ${kcalOver ? "text-[var(--color-danger)]" : "text-[var(--color-mint)]"}`}>
+            <div className={`mt-2 text-xl font-semibold ${kcalOver ? "text-[var(--color-danger)]" : "text-[var(--color-important-text)]"}`}>
               {kcalOver ? `+${Math.abs(kcalBalance)}` : kcalBalance}
             </div>
           </div>
-          <div className="rounded-[1.35rem] bg-white/82 px-4 py-4">
+          <div className="theme-elevated rounded-[1.35rem] px-4 py-4">
             <div className="text-xs uppercase tracking-[0.16em] text-slate-400">Цель</div>
             <div className="mt-2 text-xl font-semibold text-slate-900">{summary.target?.kcal ?? 0}</div>
           </div>
@@ -110,7 +108,7 @@ export function TodayScreen() {
             <h2 className="text-lg font-semibold text-slate-900">Быстро добавить еду</h2>
             <p className="mt-1 text-sm text-slate-500">Выберите прием пищи и добавьте продукт без лишних переходов.</p>
           </div>
-          <Link href={`/plan?date=${today}`} className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+          <Link href={`/plan?date=${today}`} className="theme-elevated rounded-full px-4 py-2 text-sm font-semibold text-slate-700">
             К плану
           </Link>
         </div>
@@ -124,7 +122,7 @@ export function TodayScreen() {
                 setSheetVersion((value) => value + 1);
                 setSheetOpen(true);
               }}
-              className="rounded-[1.5rem] bg-white px-4 py-4 text-left shadow-sm"
+              className="theme-elevated rounded-[1.5rem] px-4 py-4 text-left shadow-sm"
             >
               <p className="text-sm font-semibold text-slate-900">{mealLabels[mealType]}</p>
               <p className="mt-1 text-xs text-slate-500">Добавить в {mealLabels[mealType].toLowerCase()}</p>
@@ -145,7 +143,7 @@ export function TodayScreen() {
                 setSheetVersion((value) => value + 1);
                 setSheetOpen(true);
               }}
-              className="rounded-[1rem] bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-white"
+              className="theme-accent-button rounded-[1rem] px-5 py-3 text-sm font-semibold"
             >
               Добавить первый продукт
             </button>

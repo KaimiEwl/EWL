@@ -15,25 +15,51 @@
   --color-danger: #d94b5d;
   --color-danger-soft: #ffe0e5;
   --color-warning: #eb9b44;
+  --color-warning-soft: #ffe8ca;
+  --color-elevated: rgba(255, 255, 255, 0.9);
+  --color-completed: #d8f5ee;
+  --color-completed-text: #1f6f67;
+  --color-important: #fff1f6;
+  --color-important-text: #7e3655;
+  --color-overlay: rgba(15, 23, 42, 0.32);
+  --hero-gradient: linear-gradient(160deg, #fffdf8 0%, #f1fdf6 52%, #ffeef4 100%);
+  --panel-gradient: linear-gradient(155deg, #fffef9 0%, #f3fbff 45%, #fff1f6 100%);
+  --catalog-gradient: linear-gradient(150deg, #fff9f5 0%, #edf9ff 50%, #ffe9f1 100%);
+  --avatar-gradient: linear-gradient(160deg, #ecfaf4, #ffe8f0);
   --shadow-soft: 0 16px 45px rgba(90, 105, 115, 0.14);
+  --shadow-accent: 0 12px 28px rgba(243, 124, 165, 0.3);
+  --shadow-accent-strong: 0 14px 30px rgba(243, 124, 165, 0.3);
 }
 
 :root[data-theme="beige"] {
-  --color-shell: #e9e1d6;
-  --color-surface: rgba(247, 242, 235, 0.98);
-  --color-surface-strong: #fffaf4;
-  --color-surface-mint: #ece6db;
-  --color-text: #2c2823;
-  --color-subtle: #655f58;
-  --color-outline: rgba(116, 104, 92, 0.22);
-  --color-accent: #8f7862;
-  --color-accent-soft: #e7dbcf;
-  --color-mint: #2f8b76;
-  --color-mint-soft: #dfece7;
-  --color-danger: #b95757;
-  --color-danger-soft: #f2dfdc;
-  --color-warning: #b6884f;
-  --shadow-soft: 0 16px 45px rgba(88, 79, 70, 0.14);
+  --color-shell: #e7ddd1;
+  --color-surface: rgba(246, 239, 231, 0.98);
+  --color-surface-strong: #fdf7f0;
+  --color-surface-mint: #efe4d7;
+  --color-text: #3e3127;
+  --color-subtle: #78685b;
+  --color-outline: rgba(125, 106, 90, 0.2);
+  --color-accent: #7b5e4b;
+  --color-accent-soft: #e7d8ca;
+  --color-mint: #8b6b52;
+  --color-mint-soft: #efe1d3;
+  --color-danger: #9e7055;
+  --color-danger-soft: #f1e1d4;
+  --color-warning: #a8845d;
+  --color-warning-soft: #eadbc8;
+  --color-elevated: rgba(252, 246, 239, 0.96);
+  --color-completed: #e2d2c2;
+  --color-completed-text: #5d4637;
+  --color-important: #ead8c5;
+  --color-important-text: #5a4336;
+  --color-overlay: rgba(59, 43, 32, 0.22);
+  --hero-gradient: linear-gradient(160deg, #f8f2ea 0%, #f2e7da 52%, #ede0d2 100%);
+  --panel-gradient: linear-gradient(155deg, #f7f0e8 0%, #f1e6d8 45%, #ebdfd1 100%);
+  --catalog-gradient: linear-gradient(150deg, #f8f1e8 0%, #efe4d6 50%, #e8daca 100%);
+  --avatar-gradient: linear-gradient(160deg, #efe3d5, #dcc7b0);
+  --shadow-soft: 0 18px 45px rgba(95, 77, 62, 0.14);
+  --shadow-accent: 0 12px 28px rgba(123, 94, 75, 0.2);
+  --shadow-accent-strong: 0 14px 30px rgba(123, 94, 75, 0.22);
 }
 
 @theme inline {
@@ -54,8 +80,8 @@ html {
 
 html[data-theme="beige"] {
   background:
-    radial-gradient(circle at top left, rgba(143, 120, 98, 0.18), transparent 34%),
-    radial-gradient(circle at top right, rgba(210, 190, 171, 0.22), transparent 30%),
+    radial-gradient(circle at top left, rgba(155, 127, 101, 0.16), transparent 34%),
+    radial-gradient(circle at top right, rgba(228, 212, 194, 0.22), transparent 30%),
     var(--color-shell);
 }
 
@@ -90,10 +116,134 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   backdrop-filter: blur(18px);
 }
 
+.theme-hero {
+  background: var(--hero-gradient);
+  box-shadow: var(--shadow-soft);
+}
+
+.theme-panel {
+  background: var(--panel-gradient);
+  box-shadow: var(--shadow-soft);
+}
+
+.theme-catalog {
+  background: var(--catalog-gradient);
+  box-shadow: var(--shadow-soft);
+}
+
+.theme-elevated {
+  background: var(--color-elevated);
+  border: 1px solid color-mix(in srgb, var(--color-outline) 80%, transparent);
+}
+
+.theme-subtle {
+  background: color-mix(in srgb, var(--color-surface-strong) 55%, var(--color-shell));
+}
+
+.theme-important {
+  background: var(--color-important);
+  color: var(--color-important-text);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 24%, transparent);
+  box-shadow: var(--shadow-accent);
+}
+
+.theme-completed {
+  background: var(--color-completed);
+  color: var(--color-completed-text);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 18%, transparent);
+}
+
+.theme-status-positive {
+  background: var(--color-mint-soft);
+  color: var(--color-mint);
+}
+
+.theme-status-warning {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.theme-accent-button {
+  background: var(--color-accent);
+  color: #fff;
+  box-shadow: var(--shadow-accent);
+}
+
+.theme-switcher-shell {
+  border: 1px solid var(--color-outline);
+  background: color-mix(in srgb, var(--color-surface-strong) 82%, transparent);
+  box-shadow: var(--shadow-soft);
+}
+
+.theme-switcher-tab-active {
+  background: var(--color-accent);
+  box-shadow: var(--shadow-accent);
+}
+
+.theme-nav {
+  border: 1px solid color-mix(in srgb, var(--color-outline) 75%, transparent);
+  background: color-mix(in srgb, var(--color-surface-strong) 88%, transparent);
+  box-shadow: var(--shadow-soft);
+}
+
+.theme-input {
+  background: var(--color-elevated);
+}
+
+.theme-overlay {
+  background: var(--color-overlay);
+}
+
 .text-balance {
   text-wrap: balance;
 }
 
 .safe-bottom {
   padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+
+html[data-theme="beige"] .text-slate-900,
+html[data-theme="beige"] .text-slate-800,
+html[data-theme="beige"] .text-slate-700 {
+  color: var(--color-text) !important;
+}
+
+html[data-theme="beige"] .text-slate-600,
+html[data-theme="beige"] .text-slate-500,
+html[data-theme="beige"] .text-slate-400,
+html[data-theme="beige"] .text-slate-300 {
+  color: var(--color-subtle) !important;
+}
+
+html[data-theme="beige"] .bg-white,
+html[data-theme="beige"] .bg-white\/92,
+html[data-theme="beige"] .bg-white\/90,
+html[data-theme="beige"] .bg-white\/88,
+html[data-theme="beige"] .bg-white\/82,
+html[data-theme="beige"] .bg-white\/75,
+html[data-theme="beige"] .bg-white\/70,
+html[data-theme="beige"] .bg-white\/60,
+html[data-theme="beige"] .bg-white\/55 {
+  background-color: var(--color-elevated) !important;
+}
+
+html[data-theme="beige"] .bg-slate-100 {
+  background-color: #efe4d7 !important;
+}
+
+html[data-theme="beige"] .bg-slate-50 {
+  background-color: #f4ebdf !important;
+}
+
+html[data-theme="beige"] .bg-slate-200 {
+  background-color: #d8c7b4 !important;
+}
+
+html[data-theme="beige"] .border-white\/60 {
+  border-color: rgba(122, 103, 88, 0.18) !important;
+}
+
+html[data-theme="beige"] .bg-slate-900\/30,
+html[data-theme="beige"] .bg-slate-900\/40 {
+  background-color: var(--color-overlay) !important;
 }

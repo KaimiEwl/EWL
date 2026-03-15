@@ -21,14 +21,14 @@ export function MealSection({
   const totals = getMealTotals(rows);
 
   return (
-    <section className="app-card rounded-[2rem] p-4">
+    <section className={`app-card rounded-[2rem] p-4 ${rows.length ? "theme-completed" : ""}`}>
       <div>
         <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
         <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
-          <span className="rounded-full bg-white px-3 py-1.5 font-semibold text-slate-700">
-            {rows.length ? `${rows.length} поз.` : "Пусто"}
+          <span className={`rounded-full px-3 py-1.5 font-semibold ${rows.length ? "theme-important" : "theme-elevated text-slate-700"}`}>
+            {rows.length ? `Закрыт • ${rows.length} поз.` : "Пусто"}
           </span>
-          <span className="rounded-full bg-[var(--color-mint-soft)] px-3 py-1.5 font-semibold text-[var(--color-mint)]">
+          <span className="theme-status-positive rounded-full px-3 py-1.5 font-semibold">
             {totals.kcal} ккал
           </span>
           <span className="rounded-full bg-slate-100 px-3 py-1.5">Б {totals.protein}</span>
@@ -57,7 +57,7 @@ export function MealSection({
       <button
         type="button"
         onClick={onAdd}
-        className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-[1.1rem] bg-[var(--color-accent)] px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_26px_rgba(243,124,165,0.28)]"
+        className="theme-accent-button mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-[1.1rem] px-4 py-3 text-sm font-semibold"
       >
         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-base">+</span>
         Добавить продукт

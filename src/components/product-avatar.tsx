@@ -21,7 +21,7 @@ export function ProductAvatar({
 
   return (
     <div
-      className={`flex ${sizeClass} items-center justify-center rounded-full bg-[linear-gradient(160deg,#ecfaf4,#ffe8f0)] font-semibold text-slate-700`}
+      className={`flex ${sizeClass} items-center justify-center rounded-full bg-[image:var(--avatar-gradient)] font-semibold text-slate-700`}
     >
       {getProductInitial(name)}
     </div>
