@@ -99,7 +99,12 @@ export function ProductSearchSheet({
             onClick={() => selectProduct(product)}
             className="flex min-w-0 flex-1 items-center gap-3 text-left"
           >
-            <ProductAvatar icon={product.icon} name={product.name} size={compact ? "sm" : "md"} />
+            <ProductAvatar
+              icon={product.icon}
+              name={product.name}
+              size={compact ? "sm" : "md"}
+              preferCustomIcon={Boolean(product.isCustom)}
+            />
             <div className="min-w-0 flex-1">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">

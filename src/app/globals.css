@@ -199,6 +199,99 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background: var(--color-overlay);
 }
 
+.product-avatar-shell {
+  border: 1px solid color-mix(in srgb, var(--avatar-border, var(--color-outline)) 70%, transparent);
+  background: var(--avatar-bg, var(--avatar-gradient));
+  color: var(--avatar-icon, var(--color-text));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    0 10px 24px color-mix(in srgb, var(--avatar-shadow, var(--color-accent)) 18%, transparent);
+}
+
+.product-avatar-tone-fruit {
+  --avatar-bg: linear-gradient(160deg, color-mix(in srgb, var(--color-important) 82%, #fff), color-mix(in srgb, var(--color-accent-soft) 78%, #fff));
+  --avatar-icon: color-mix(in srgb, var(--color-accent) 70%, var(--color-text));
+  --avatar-border: color-mix(in srgb, var(--color-accent) 32%, transparent);
+  --avatar-shadow: var(--color-accent);
+}
+
+.product-avatar-tone-vegetable {
+  --avatar-bg: linear-gradient(160deg, color-mix(in srgb, var(--color-mint-soft) 86%, #fff), color-mix(in srgb, var(--color-surface-mint) 80%, #fff));
+  --avatar-icon: color-mix(in srgb, var(--color-mint) 78%, var(--color-text));
+  --avatar-border: color-mix(in srgb, var(--color-mint) 28%, transparent);
+  --avatar-shadow: var(--color-mint);
+}
+
+.product-avatar-tone-protein {
+  --avatar-bg: linear-gradient(160deg, color-mix(in srgb, var(--color-warning-soft) 82%, #fff), color-mix(in srgb, var(--color-important) 56%, #fff));
+  --avatar-icon: color-mix(in srgb, var(--color-warning) 68%, var(--color-text));
+  --avatar-border: color-mix(in srgb, var(--color-warning) 26%, transparent);
+  --avatar-shadow: var(--color-warning);
+}
+
+.product-avatar-tone-fish {
+  --avatar-bg: linear-gradient(160deg, color-mix(in srgb, var(--color-mint-soft) 76%, #fff), color-mix(in srgb, var(--color-important) 34%, #fff));
+  --avatar-icon: color-mix(in srgb, var(--color-mint) 74%, var(--color-text));
+  --avatar-border: color-mix(in srgb, var(--color-mint) 24%, transparent);
+  --avatar-shadow: var(--color-mint);
+}
+
+.product-avatar-tone-dairy {
+  --avatar-bg: linear-gradient(160deg, color-mix(in srgb, var(--color-surface) 88%, #fff), color-mix(in srgb, var(--color-accent-soft) 28%, #fff));
+  --avatar-icon: color-mix(in srgb, var(--color-subtle) 72%, var(--color-text));
+  --avatar-border: color-mix(in srgb, var(--color-subtle) 22%, transparent);
+  --avatar-shadow: var(--color-subtle);
+}
+
+.product-avatar-tone-grain {
+  --avatar-bg: linear-gradient(160deg, color-mix(in srgb, var(--color-warning-soft) 88%, #fff), color-mix(in srgb, var(--color-accent-soft) 35%, #fff));
+  --avatar-icon: color-mix(in srgb, var(--color-warning) 74%, var(--color-text));
+  --avatar-border: color-mix(in srgb, var(--color-warning) 22%, transparent);
+  --avatar-shadow: var(--color-warning);
+}
+
+.product-avatar-tone-bread {
+  --avatar-bg: linear-gradient(160deg, color-mix(in srgb, var(--color-warning-soft) 78%, #fff), color-mix(in srgb, var(--color-surface) 68%, #fff));
+  --avatar-icon: color-mix(in srgb, var(--color-warning) 66%, var(--color-text));
+  --avatar-border: color-mix(in srgb, var(--color-warning) 20%, transparent);
+  --avatar-shadow: var(--color-warning);
+}
+
+.product-avatar-tone-sweet {
+  --avatar-bg: linear-gradient(160deg, color-mix(in srgb, var(--color-important) 88%, #fff), color-mix(in srgb, var(--color-warning-soft) 52%, #fff));
+  --avatar-icon: color-mix(in srgb, var(--color-accent) 54%, var(--color-warning));
+  --avatar-border: color-mix(in srgb, var(--color-accent) 22%, transparent);
+  --avatar-shadow: var(--color-accent);
+}
+
+.product-avatar-tone-fat {
+  --avatar-bg: linear-gradient(160deg, color-mix(in srgb, var(--color-warning-soft) 82%, #fff), color-mix(in srgb, var(--color-important) 24%, #fff));
+  --avatar-icon: color-mix(in srgb, var(--color-warning) 76%, var(--color-text));
+  --avatar-border: color-mix(in srgb, var(--color-warning) 24%, transparent);
+  --avatar-shadow: var(--color-warning);
+}
+
+.product-avatar-tone-drink {
+  --avatar-bg: linear-gradient(160deg, color-mix(in srgb, var(--color-surface) 84%, #fff), color-mix(in srgb, var(--color-mint-soft) 44%, #fff));
+  --avatar-icon: color-mix(in srgb, var(--color-subtle) 76%, var(--color-text));
+  --avatar-border: color-mix(in srgb, var(--color-subtle) 20%, transparent);
+  --avatar-shadow: var(--color-subtle);
+}
+
+.product-avatar-tone-nuts {
+  --avatar-bg: linear-gradient(160deg, color-mix(in srgb, var(--color-warning-soft) 84%, #fff), color-mix(in srgb, var(--color-completed) 32%, #fff));
+  --avatar-icon: color-mix(in srgb, var(--color-warning) 70%, var(--color-text));
+  --avatar-border: color-mix(in srgb, var(--color-warning) 24%, transparent);
+  --avatar-shadow: var(--color-warning);
+}
+
+.product-avatar-tone-neutral {
+  --avatar-bg: var(--avatar-gradient);
+  --avatar-icon: color-mix(in srgb, var(--color-text) 74%, var(--color-subtle));
+  --avatar-border: color-mix(in srgb, var(--color-outline) 80%, transparent);
+  --avatar-shadow: var(--color-subtle);
+}
+
 .text-balance {
   text-wrap: balance;
 }

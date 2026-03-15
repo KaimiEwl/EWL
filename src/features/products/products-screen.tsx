@@ -80,7 +80,11 @@ export function ProductsScreen() {
             return (
               <article key={product.id} className="app-card rounded-[1.75rem] p-4">
                 <div className="flex items-start gap-3">
-                  <ProductAvatar icon={product.icon} name={product.name} />
+                  <ProductAvatar
+                    icon={product.icon}
+                    name={product.name}
+                    preferCustomIcon={Boolean(product.isCustom)}
+                  />
                   <div className="min-w-0 flex-1">
                     <h2 className="text-base font-semibold text-slate-900">{product.name}</h2>
                     <p className="mt-1 text-xs text-slate-500">

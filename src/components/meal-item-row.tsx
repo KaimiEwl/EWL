@@ -60,7 +60,12 @@ export function MealItemRow({
   return (
     <div className="rounded-[1.5rem] bg-white/88 p-4">
       <div className="flex items-start gap-3">
-        <ProductAvatar icon={row.product.icon} name={row.product.name} size="sm" />
+        <ProductAvatar
+          icon={row.product.icon}
+          name={row.product.name}
+          size="sm"
+          preferCustomIcon={Boolean(row.product.isCustom)}
+        />
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
