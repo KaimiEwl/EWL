@@ -3,11 +3,11 @@ import type { Product } from "@/lib/types";
 
 const curatedProducts: Product[] = [
   { id: "oatmeal", name: "Овсянка", icon: "🥣", proteinPer100: 12.3, fatPer100: 6.1, carbsPer100: 59.5, kcalPer100: 342, searchTerms: ["Крупы: Овсянка"] },
-  { id: "egg", name: "Яйцо", icon: "🥚", proteinPer100: 12.7, fatPer100: 10.9, carbsPer100: 0.7, kcalPer100: 157, searchTerms: ["Яйца: Яйцо куриное"] },
+  { id: "egg", name: "Яйцо", icon: "🥚", proteinPer100: 12.6, fatPer100: 9.5, carbsPer100: 0.7, kcalPer100: 143, searchTerms: ["Яйца: Яйцо куриное"] },
   { id: "cottage-cheese", name: "Творог 5%", icon: "🧀", proteinPer100: 17, fatPer100: 5, carbsPer100: 3, kcalPer100: 121 },
   { id: "greek-yogurt", name: "Греческий йогурт", icon: "🥛", proteinPer100: 8.5, fatPer100: 2.8, carbsPer100: 4.2, kcalPer100: 78 },
-  { id: "banana", name: "Банан", icon: "🍌", proteinPer100: 1.5, fatPer100: 0.2, carbsPer100: 21.8, kcalPer100: 95 },
-  { id: "apple", name: "Яблоко", icon: "🍎", proteinPer100: 0.4, fatPer100: 0.4, carbsPer100: 11.3, kcalPer100: 52 },
+  { id: "banana", name: "Банан", icon: "🍌", proteinPer100: 1.1, fatPer100: 0.3, carbsPer100: 22.8, kcalPer100: 89 },
+  { id: "apple", name: "Яблоко", icon: "🍎", proteinPer100: 0.3, fatPer100: 0.2, carbsPer100: 13.8, kcalPer100: 52 },
   { id: "berries", name: "Ягоды", icon: "🫐", proteinPer100: 1, fatPer100: 0.5, carbsPer100: 8.7, kcalPer100: 47 },
   { id: "almonds", name: "Миндаль", icon: "🌰", proteinPer100: 21.2, fatPer100: 49.9, carbsPer100: 9.1, kcalPer100: 579 },
   { id: "chicken", name: "Куриная грудка", icon: "🍗", proteinPer100: 23.6, fatPer100: 1.9, carbsPer100: 0, kcalPer100: 113, searchTerms: ["Мясо: Куриная грудка"] },
@@ -105,6 +105,28 @@ export function buildBaseProducts() {
 
 export function mergeBuiltInProducts(products: Product[]) {
   const baseProducts = buildBaseProducts();
-  const existingIds = new Set(products.map((product) => product.id));
-  return [...products.map(withPresentation), ...baseProducts.filter((product) => !existingIds.has(product.id))];
+  const baseById = new Map(baseProducts.map((product) => [product.id, product]));
+
+  const mergedExisting = products.map((existingProduct) => {
+    const baseProduct = baseById.get(existingProduct.id);
+    if (!baseProduct) {
+      return withPresentation(existingProduct);
+    }
+
+    if (existingProduct.isCustom) {
+      return withPresentation(existingProduct);
+    }
+
+    return withPresentation({
+      ...existingProduct,
+      ...baseProduct,
+      archivedAt: existingProduct.archivedAt ?? null,
+      createdAt: existingProduct.createdAt ?? baseProduct.createdAt,
+      updatedAt: existingProduct.updatedAt ?? baseProduct.updatedAt,
+      isCustom: existingProduct.isCustom,
+    });
+  });
+
+  const existingIds = new Set(mergedExisting.map((product) => product.id));
+  return [...mergedExisting, ...baseProducts.filter((product) => !existingIds.has(product.id))];
 }
