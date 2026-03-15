@@ -14,7 +14,7 @@ type ChatResponse = {
   }>;
 };
 
-export type AiHelperMode = "app" | "product" | "day";
+export type AiHelperMode = "app" | "product" | "day" | "chat";
 
 export type ProductAiSuggestion = {
   name: string;
@@ -36,6 +36,7 @@ export type ProductAiSuggestion = {
 
 export type AiHelperResult =
   | { mode: "app"; answer: string }
+  | { mode: "chat"; answer: string }
   | { mode: "day"; answer: string }
   | { mode: "product"; answer: string; product: ProductAiSuggestion };
 
@@ -229,6 +230,30 @@ export async function askAiHelper({
 
     return {
       mode: "day",
+      answer: content,
+    };
+  }
+
+  if (mode === "chat") {
+    const content = await requestDeepSeek(apiKey, [
+      {
+        role: "system",
+        content:
+          "Ты дружелюбный AI-помощник внутри приложения EWL. " +
+          "Отвечай по-русски, коротко, понятно и спокойно. " +
+          "Можно помогать информацией по приложению, продуктам, питанию и общим бытовым вопросам. " +
+          "Очень важно: ты ничего не делаешь сам за пользователя. Ты не нажимаешь кнопки, не создаешь продукты, не сохраняешь данные и не меняешь записи. " +
+          "Если пользователь просит что-то сделать, объясни это как информационную подсказку или короткий план действий. " +
+          "Пиши максимум 5 коротких предложений, без лишней воды.",
+      },
+      {
+        role: "user",
+        content: `Текущий экран: ${currentPath}. Вопрос пользователя: ${question}`,
+      },
+    ]);
+
+    return {
+      mode: "chat",
       answer: content,
     };
   }
