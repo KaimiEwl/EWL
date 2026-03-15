@@ -6,11 +6,11 @@ import { usePathname } from "next/navigation";
 const tabs = [
   {
     href: "/profile",
-    label: "План",
+    label: "Профиль",
     icon: (
       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.9">
-        <path d="M12 5v14" />
-        <path d="M5 12h14" />
+        <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+        <path d="M5 20a7 7 0 0 1 14 0" />
       </svg>
     ),
   },

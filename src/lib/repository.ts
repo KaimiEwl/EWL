@@ -1,5 +1,5 @@
 import { mergeBuiltInProducts } from "@/lib/base-products";
-import { STORAGE_KEY } from "@/lib/constants";
+import { STATE_VERSION, STORAGE_KEY } from "@/lib/constants";
 import { buildSeedState } from "@/lib/seed";
 import type { PersistedAppState } from "@/lib/types";
 
@@ -17,6 +17,26 @@ function isPersistedState(value: unknown): value is PersistedAppState {
   return Array.isArray(candidate.profiles) && Array.isArray(candidate.products);
 }
 
+function isLikelyDemoState(state: PersistedAppState) {
+  const profileIds = state.profiles.map((profile) => profile.id).sort();
+  const demoProfiles = profileIds.length === 2 && profileIds[0] === "profile-anna" && profileIds[1] === "profile-max";
+  const demoDays = state.dayEntries.every((entry) => entry.userId === "profile-anna");
+  const demoItems = state.mealItems.every((item) => item.id.startsWith("meal-"));
+  return demoProfiles && demoDays && demoItems;
+}
+
+function migrateState(state: PersistedAppState): PersistedAppState {
+  if ((state.version ?? 0) < STATE_VERSION && isLikelyDemoState(state)) {
+    return buildSeedState();
+  }
+
+  return {
+    ...state,
+    version: STATE_VERSION,
+    products: mergeBuiltInProducts(state.products),
+  };
+}
+
 export const localAppRepository: AppRepository = {
   async load() {
     if (typeof window === "undefined") {
@@ -31,10 +51,7 @@ export const localAppRepository: AppRepository = {
     try {
       const parsed = JSON.parse(raw) as unknown;
       if (isPersistedState(parsed)) {
-        return {
-          ...parsed,
-          products: mergeBuiltInProducts(parsed.products),
-        };
+        return migrateState(parsed);
       }
     } catch {
       return buildSeedState();

@@ -1,7 +1,7 @@
 import type { MealType } from "@/lib/types";
 
 export const STORAGE_KEY = "ewl.mobile.v1";
-export const STATE_VERSION = 1;
+export const STATE_VERSION = 2;
 
 export const mealOrder: MealType[] = ["breakfast", "lunch", "snack", "dinner"];
 
