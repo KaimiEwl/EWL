@@ -11,6 +11,7 @@ import type { Product, ProductDraft } from "@/lib/types";
 import { useAppStore } from "@/store/app-store";
 
 const PAGE_SIZE = 20;
+
 type EditorState =
   | { mode: "create"; draft?: ProductDraft; stamp: number }
   | { mode: "edit"; product: Product; stamp: number }
@@ -35,6 +36,27 @@ export function ProductsScreen() {
 
   return (
     <div className="space-y-4">
+      <section className="theme-important rounded-[2rem] p-4 shadow-[0_18px_40px_rgba(113,82,57,0.08)]">
+        <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Поиск по базе</div>
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setVisibleCount(PAGE_SIZE);
+          }}
+          placeholder="Найти курочку, пиццу, рис, чокопай..."
+          className="theme-input h-12 w-full rounded-[1rem] border border-[rgba(137,104,80,0.26)] bg-white/95 px-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.65),0_10px_20px_rgba(113,82,57,0.06)] outline-none"
+        />
+      </section>
+
+      <ProductAiAssistantCard
+        currentPath="/products"
+        onUseDraft={(draft) => {
+          setEditorState({ mode: "create", draft, stamp: Date.now() });
+        }}
+      />
+
       <section className="theme-catalog rounded-[2rem] px-5 py-5">
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Продукты</p>
         <h1 className="mt-2 text-2xl font-semibold text-slate-900">База продуктов</h1>
@@ -62,27 +84,6 @@ export function ProductsScreen() {
         </div>
       </section>
 
-      <ProductAiAssistantCard
-        currentPath="/products"
-        onUseDraft={(draft) => {
-          setEditorState({ mode: "create", draft, stamp: Date.now() });
-        }}
-      />
-
-      <section className="theme-important rounded-[2rem] p-4 shadow-[0_18px_40px_rgba(113,82,57,0.08)]">
-        <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Поиск по базе</div>
-        <input
-          type="search"
-          value={query}
-          onChange={(event) => {
-            setQuery(event.target.value);
-            setVisibleCount(PAGE_SIZE);
-          }}
-          placeholder="Найти курочку, пиццу, рис, чокопай..."
-          className="theme-input h-12 w-full rounded-[1rem] border border-[rgba(137,104,80,0.26)] bg-white/95 px-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.65),0_10px_20px_rgba(113,82,57,0.06)] outline-none"
-        />
-      </section>
-
       {filteredProducts.length ? (
         <section className="space-y-3">
           {visibleProducts.map((product) => {
@@ -104,7 +105,6 @@ export function ProductsScreen() {
                       Б {product.proteinPer100} • Ж {product.fatPer100} • У {product.carbsPer100} •{" "}
                       {product.kcalPer100 ?? "auto"} ккал
                     </p>
-
                     {topHighlights.length ? (
                       <p className="mt-2 text-xs font-medium text-slate-600">{topHighlights.map((item) => item.display).join(" • ")}</p>
                     ) : null}
@@ -181,9 +181,9 @@ export function ProductsScreen() {
               setVisibleCount(PAGE_SIZE);
               setEditorState({ mode: "edit", product: createdProduct, stamp: Date.now() });
               return;
-            } else {
-              updateProduct(editorState.product.id, draft);
             }
+
+            updateProduct(editorState.product.id, draft);
             setEditorState(null);
           }}
           onDelete={
