@@ -7,6 +7,8 @@ export type BuiltInMealType = Exclude<MealType, "custom">;
 export type QuantityMode = "grams" | "piece";
 export type ThemeMode = "rose" | "beige";
 export type MascotMode = "default" | "overeating";
+export type ActivityLevel = "sedentary" | "light" | "moderate" | "high";
+export type ProductNutritionInputMode = "per100" | "perUnit";
 
 export type FormulaMode = "lose" | "maintain" | "gain" | "custom";
 
@@ -14,6 +16,8 @@ export interface UserProfile {
   id: string;
   name: string;
   sex: Sex;
+  age?: number | null;
+  activityLevel?: ActivityLevel;
   heightCm?: number | null;
   weightKg: number;
   goalWeightKg?: number | null;
@@ -33,6 +37,12 @@ export interface Product {
   fatPer100: number;
   carbsPer100: number;
   kcalPer100: number | null;
+  fiberPer100?: number;
+  magnesiumPer100?: number;
+  ironPer100?: number;
+  zincPer100?: number;
+  omega3Per100?: number;
+  vitaminB12Per100?: number;
   unitMode?: QuantityMode;
   unitLabel?: string;
   gramsPerUnit?: number | null;
@@ -72,6 +82,12 @@ export interface NutritionTotals {
   fat: number;
   carbs: number;
   kcal: number;
+  fiber: number;
+  magnesium: number;
+  iron: number;
+  zinc: number;
+  omega3: number;
+  vitaminB12: number;
 }
 
 export interface CompanionState {
@@ -113,10 +129,17 @@ export interface DaySummary {
 export interface ProductDraft {
   name: string;
   icon: string;
+  nutritionInputMode: ProductNutritionInputMode;
   proteinPer100: string;
   fatPer100: string;
   carbsPer100: string;
   kcalPer100: string;
+  fiberPer100: string;
+  magnesiumPer100: string;
+  ironPer100: string;
+  zincPer100: string;
+  omega3Per100: string;
+  vitaminB12Per100: string;
   unitMode: QuantityMode;
   unitLabel: string;
   gramsPerUnit: string;

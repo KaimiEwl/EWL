@@ -4,23 +4,25 @@ import { useMemo, useState } from "react";
 import { FORMULA_PRESETS } from "@/lib/constants";
 import { calculateTargets, resolveProfileFormula } from "@/lib/macros";
 import { getSelectedUser } from "@/lib/selectors";
-import type { FormulaMode } from "@/lib/types";
-import { formulaLabel, sanitizeNumber, useAppStore } from "@/store/app-store";
+import type { ActivityLevel, FormulaMode } from "@/lib/types";
+import { activityLabel, formulaLabel, sanitizeNumber, useAppStore } from "@/store/app-store";
 import { UserSwitcher } from "@/components/user-switcher";
 
 const inputClass =
   "mt-2 h-12 w-full rounded-[1rem] border border-[var(--color-outline)] bg-white px-4 text-[15px] outline-none";
 
 const formulaDescriptions: Record<FormulaMode, string> = {
-  lose: "Мягкий дефицит без жестких ограничений.",
-  maintain: "Комфортное удержание текущего веса.",
-  gain: "Спокойный набор массы без лишней спешки.",
+  lose: "Мягкий дефицит по Миффлину-Сан Жеора: TDEE - 15%.",
+  maintain: "Поддержание по Миффлину-Сан Жеора без дефицита.",
+  gain: "Спокойный профицит по Миффлину-Сан Жеора: TDEE + 10%.",
   custom: "Свои Б/Ж/У на кг вручную.",
 };
 
 type ProfileDraft = {
   name: string;
   sex: "female" | "male";
+  age: string;
+  activityLevel: ActivityLevel;
   heightCm: string;
   weightKg: string;
   goalWeightKg: string;
@@ -33,13 +35,15 @@ type ProfileDraft = {
 const emptyDraft: ProfileDraft = {
   name: "",
   sex: "female",
+  age: "30",
+  activityLevel: "sedentary",
   heightCm: "",
   weightKg: "",
   goalWeightKg: "",
   formulaMode: "maintain",
   proteinPerKg: String(FORMULA_PRESETS.maintain.proteinPerKg),
   fatPerKg: String(FORMULA_PRESETS.maintain.fatPerKg),
-  carbsPerKg: String(FORMULA_PRESETS.maintain.carbsPerKg),
+  carbsPerKg: "0",
 };
 
 export function ProfileScreen() {
@@ -50,12 +54,13 @@ export function ProfileScreen() {
   const [showSwitcher, setShowSwitcher] = useState(false);
 
   const selectedUser = getSelectedUser(state);
+  const draftAge = sanitizeNumber(draft.age, 30);
   const draftHeight = sanitizeNumber(draft.heightCm, 0);
   const draftWeight = sanitizeNumber(draft.weightKg, 0);
   const draftGoalWeight = sanitizeNumber(draft.goalWeightKg, 0);
   const draftProtein = sanitizeNumber(draft.proteinPerKg, FORMULA_PRESETS.maintain.proteinPerKg);
   const draftFat = sanitizeNumber(draft.fatPerKg, FORMULA_PRESETS.maintain.fatPerKg);
-  const draftCarbs = sanitizeNumber(draft.carbsPerKg, FORMULA_PRESETS.maintain.carbsPerKg);
+  const draftCarbs = sanitizeNumber(draft.carbsPerKg, 0);
   const draftFormula = useMemo(
     () =>
       draft.formulaMode === "custom"
@@ -69,12 +74,13 @@ export function ProfileScreen() {
   );
   const draftValid =
     draft.name.trim().length >= 2 &&
+    draftAge >= 14 &&
     draftHeight > 0 &&
     draftWeight > 0 &&
     draftGoalWeight > 0 &&
     draftFormula.proteinPerKg > 0 &&
     draftFormula.fatPerKg > 0 &&
-    draftFormula.carbsPerKg > 0;
+    (draft.formulaMode !== "custom" || draftFormula.carbsPerKg >= 0);
 
   const draftPreview = useMemo(
     () =>
@@ -82,6 +88,8 @@ export function ProfileScreen() {
         id: "preview",
         name: draft.name || "Новый профиль",
         sex: draft.sex,
+        age: draftAge,
+        activityLevel: draft.activityLevel,
         heightCm: draftHeight || null,
         weightKg: draftWeight || 0,
         goalWeightKg: draftGoalWeight || draftWeight || 0,
@@ -92,7 +100,7 @@ export function ProfileScreen() {
         createdAt: "",
         updatedAt: "",
       }),
-    [draft, draftFormula, draftGoalWeight, draftHeight, draftWeight],
+    [draft, draftAge, draftFormula, draftGoalWeight, draftHeight, draftWeight],
   );
 
   if (!state.hydrated) {
@@ -103,6 +111,8 @@ export function ProfileScreen() {
     createProfile({
       name: draft.name.trim(),
       sex: draft.sex,
+      age: draftAge,
+      activityLevel: draft.activityLevel,
       heightCm: draftHeight,
       weightKg: draftWeight,
       goalWeightKg: draftGoalWeight,
@@ -123,7 +133,7 @@ export function ProfileScreen() {
         <section className="app-card rounded-[2rem] p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Профиль</p>
           <h1 className="mt-2 text-2xl font-semibold text-slate-900">Создайте профиль</h1>
-          <p className="mt-2 text-sm text-slate-500">Введите имя, пол, рост, вес и желаемый вес.</p>
+          <p className="mt-2 text-sm text-slate-500">Введите имя, пол, возраст, рост, вес и желаемый вес.</p>
 
           {!showCreateProfile ? (
             <button
@@ -164,7 +174,10 @@ export function ProfileScreen() {
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Профиль</p>
             <h1 className="mt-2 text-2xl font-semibold text-slate-900">{selectedUser.name}</h1>
             <p className="mt-2 text-sm text-slate-500">
-              {selectedUser.heightCm ?? "—"} см • {selectedUser.weightKg} кг • цель {selectedUser.goalWeightKg ?? selectedUser.weightKg} кг
+              {selectedUser.age ?? 30} лет • {selectedUser.heightCm ?? "—"} см • {selectedUser.weightKg} кг
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              Цель {selectedUser.goalWeightKg ?? selectedUser.weightKg} кг • {activityLabel(selectedUser.activityLevel ?? "sedentary")}
             </p>
           </div>
           <button
@@ -193,7 +206,10 @@ export function ProfileScreen() {
           <div className="font-semibold text-slate-900">{formulaLabel(selectedUser.formulaMode)}</div>
           <div className="mt-1">{formulaDescriptions[selectedUser.formulaMode]}</div>
           <div className="mt-2">
-            Б {selectedFormula.proteinPerKg} / Ж {selectedFormula.fatPerKg} / У {selectedFormula.carbsPerKg} на кг
+            Б {selectedFormula.proteinPerKg} / Ж {selectedFormula.fatPerKg} на кг • У {selectedFormula.carbsPerKg} на кг
+          </div>
+          <div className="mt-3 text-xs text-slate-500">
+            Клетчатка {targets.fiber} г • Магний {targets.magnesium} мг • Железо {targets.iron} мг
           </div>
         </div>
 
@@ -279,7 +295,7 @@ function FormulaModeSwitch({
 
   return (
     <div>
-      <div className="text-sm font-medium text-slate-600">Режим</div>
+      <div className="text-sm font-medium text-slate-600">Формула</div>
       <div className="mt-2 grid grid-cols-2 gap-2">
         {options.map((mode) => (
           <button
@@ -298,6 +314,29 @@ function FormulaModeSwitch({
         ))}
       </div>
     </div>
+  );
+}
+
+function ActivityInput({
+  value,
+  onChange,
+}: {
+  value: ActivityLevel;
+  onChange: (value: ActivityLevel) => void;
+}) {
+  const options: ActivityLevel[] = ["sedentary", "light", "moderate", "high"];
+
+  return (
+    <label className="text-sm font-medium text-slate-600">
+      Активность
+      <select className={inputClass} value={value} onChange={(event) => onChange(event.target.value as ActivityLevel)}>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {activityLabel(option)}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -321,9 +360,7 @@ function FormulaInputs({
       <div className="rounded-[1.25rem] bg-slate-50 px-4 py-4 text-sm text-slate-600">
         <div className="font-semibold text-slate-900">{formulaLabel(mode)}</div>
         <div className="mt-1">{formulaDescriptions[mode]}</div>
-        <div className="mt-2">
-          Б {preset.proteinPerKg} / Ж {preset.fatPerKg} / У {preset.carbsPerKg} на кг
-        </div>
+        <div className="mt-2">Б {preset.proteinPerKg} / Ж {preset.fatPerKg} на кг • У авто по остаточным калориям</div>
       </div>
     );
   }
@@ -357,7 +394,7 @@ function FormulaInputs({
         <input
           className={inputClass}
           type="number"
-          min="0.1"
+          min="0"
           step="0.1"
           value={carbsPerKg}
           onChange={(event) => onChange({ carbsPerKg: event.target.value })}
@@ -405,6 +442,21 @@ function ProfileForm({
           <option value="male">Мужской</option>
         </select>
       </label>
+
+      <label className="text-sm font-medium text-slate-600">
+        Возраст
+        <input
+          className={inputClass}
+          type="number"
+          min="14"
+          step="1"
+          value={draft.age}
+          onChange={(event) => onChange({ ...draft, age: event.target.value })}
+          placeholder="Возраст"
+        />
+      </label>
+
+      <ActivityInput value={draft.activityLevel} onChange={(activityLevel) => onChange({ ...draft, activityLevel })} />
 
       <label className="text-sm font-medium text-slate-600">
         Рост
@@ -459,6 +511,9 @@ function ProfileForm({
         <div className="font-semibold text-slate-900">Предпросмотр цели</div>
         <div className="mt-2">{preview.kcal} ккал</div>
         <div className="mt-1">Б {preview.protein} • Ж {preview.fat} • У {preview.carbs}</div>
+        <div className="mt-2 text-xs text-slate-500">
+          Клетчатка {preview.fiber} г • Магний {preview.magnesium} мг • Цинк {preview.zinc} мг
+        </div>
       </div>
 
       <div className="flex items-center gap-3">
@@ -493,6 +548,8 @@ function CurrentProfileForm({
   onUpdate: (changes: {
     name?: string;
     sex?: "female" | "male";
+    age?: number;
+    activityLevel?: ActivityLevel;
     heightCm?: number;
     weightKg?: number;
     goalWeightKg?: number;
@@ -521,6 +578,20 @@ function CurrentProfileForm({
           <option value="male">Мужской</option>
         </select>
       </label>
+
+      <label className="text-sm font-medium text-slate-600">
+        Возраст
+        <input
+          className={inputClass}
+          type="number"
+          min="14"
+          step="1"
+          value={user.age ?? 30}
+          onChange={(event) => onUpdate({ age: sanitizeNumber(event.target.value, user.age ?? 30) })}
+        />
+      </label>
+
+      <ActivityInput value={user.activityLevel ?? "sedentary"} onChange={(activityLevel) => onUpdate({ activityLevel })} />
 
       <label className="text-sm font-medium text-slate-600">
         Рост
@@ -576,9 +647,7 @@ function CurrentProfileForm({
             fatPerKg:
               changes.fatPerKg === undefined ? undefined : sanitizeNumber(changes.fatPerKg, user.fatPerKg),
             carbsPerKg:
-              changes.carbsPerKg === undefined
-                ? undefined
-                : sanitizeNumber(changes.carbsPerKg, user.carbsPerKg),
+              changes.carbsPerKg === undefined ? undefined : sanitizeNumber(changes.carbsPerKg, user.carbsPerKg),
           })
         }
       />

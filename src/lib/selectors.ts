@@ -314,12 +314,14 @@ export function getMonthStats(state: PersistedAppState, user: UserProfile | null
       totalTargetKcal: 0,
       totalActualKcal: 0,
       totalBalanceKcal: 0,
+      totalTargetNutrition: createEmptyNutrition(),
+      totalActualNutrition: createEmptyNutrition(),
+      totalBalanceNutrition: createEmptyNutrition(),
     };
   }
 
   const totals = sumNutrition(filled.map((entry) => entry.totals));
-  const totalTargetKcal = filled.reduce((sum, entry) => sum + entry.target.kcal, 0);
-  const totalActualKcal = totals.kcal;
+  const targetTotals = sumNutrition(filled.map((entry) => entry.target));
 
   return {
     average: {
@@ -327,12 +329,21 @@ export function getMonthStats(state: PersistedAppState, user: UserProfile | null
       fat: Math.round((totals.fat / filled.length) * 10) / 10,
       carbs: Math.round((totals.carbs / filled.length) * 10) / 10,
       kcal: Math.round(totals.kcal / filled.length),
+      fiber: Math.round((totals.fiber / filled.length) * 10) / 10,
+      magnesium: Math.round((totals.magnesium / filled.length) * 10) / 10,
+      iron: Math.round((totals.iron / filled.length) * 10) / 10,
+      zinc: Math.round((totals.zinc / filled.length) * 10) / 10,
+      omega3: Math.round((totals.omega3 / filled.length) * 10) / 10,
+      vitaminB12: Math.round((totals.vitaminB12 / filled.length) * 10) / 10,
     },
     daysAbove: filled.filter((entry) => entry.isOver).length,
     daysWithin: filled.filter((entry) => !entry.isOver).length,
     daysLogged: filled.length,
-    totalTargetKcal,
-    totalActualKcal,
-    totalBalanceKcal: totalTargetKcal - totalActualKcal,
+    totalTargetKcal: targetTotals.kcal,
+    totalActualKcal: totals.kcal,
+    totalBalanceKcal: targetTotals.kcal - totals.kcal,
+    totalTargetNutrition: targetTotals,
+    totalActualNutrition: totals,
+    totalBalanceNutrition: subtractNutrition(targetTotals, totals),
   };
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { EmptyState } from "@/components/empty-state";
+import { MicronutrientBalanceCard } from "@/components/micronutrient-balance-card";
 import { MonthCalendar } from "@/components/month-calendar";
 import { getMonthStats, getMonthSummaryMap, getSelectedUser } from "@/lib/selectors";
 import { useAppStore } from "@/store/app-store";
@@ -98,6 +99,15 @@ export function CalendarScreen() {
           </div>
         )}
       </section>
+
+      {stats.daysLogged ? (
+        <MicronutrientBalanceCard
+          title="Нутриенты за месяц"
+          description="Суммирую только те дни месяца, которые уже были заполнены."
+          target={stats.totalTargetNutrition}
+          actual={stats.totalActualNutrition}
+        />
+      ) : null}
 
       <section className="app-card rounded-[2rem] p-5">
         <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Профиль</div>

@@ -2,10 +2,11 @@
 
 import { createContext, useContext, useEffect, useReducer } from "react";
 import { STATE_VERSION } from "@/lib/constants";
-import { normalizeFormulaMode } from "@/lib/macros";
-import { getAutoKcalFromDraft, parseDraftNumber } from "@/lib/products";
+import { normalizeActivityLevel, normalizeFormulaMode } from "@/lib/macros";
+import { getAutoKcalFromDraft, getDraftNutritionPer100, parseDraftNumber } from "@/lib/products";
 import { localAppRepository } from "@/lib/repository";
 import type {
+  ActivityLevel,
   CompanionState,
   FormulaMode,
   MealType,
@@ -26,6 +27,8 @@ type ProfileInput = Pick<
   UserProfile,
   | "name"
   | "sex"
+  | "age"
+  | "activityLevel"
   | "heightCm"
   | "weightKg"
   | "goalWeightKg"
@@ -120,11 +123,19 @@ function normalizeState(payload: PersistedAppState): PersistedAppState {
     profiles: payload.profiles.map((profile) => ({
       ...profile,
       formulaMode: normalizeFormulaMode(profile.formulaMode),
+      age: profile.age ?? 30,
+      activityLevel: normalizeActivityLevel(profile.activityLevel),
       heightCm: profile.heightCm ?? null,
       goalWeightKg: profile.goalWeightKg ?? profile.weightKg,
     })),
     products: payload.products.map((product) => ({
       ...product,
+      fiberPer100: product.fiberPer100 ?? 0,
+      magnesiumPer100: product.magnesiumPer100 ?? 0,
+      ironPer100: product.ironPer100 ?? 0,
+      zincPer100: product.zincPer100 ?? 0,
+      omega3Per100: product.omega3Per100 ?? 0,
+      vitaminB12Per100: product.vitaminB12Per100 ?? 0,
       unitMode: product.unitMode === "piece" ? "piece" : "grams",
       unitLabel: product.unitLabel ?? "",
       gramsPerUnit: product.gramsPerUnit ?? null,
@@ -142,17 +153,24 @@ function normalizeState(payload: PersistedAppState): PersistedAppState {
 
 function toProductEntity(draft: ProductDraft, existing?: Product): Product {
   const now = new Date().toISOString();
+  const values = getDraftNutritionPer100(draft);
   return {
     id: existing?.id ?? createId("product"),
     name: draft.name.trim(),
     icon: draft.icon.trim() || undefined,
     searchTerms: existing?.searchTerms ?? [],
-    proteinPer100: parseDraftNumber(draft.proteinPer100) ?? 0,
-    fatPer100: parseDraftNumber(draft.fatPer100) ?? 0,
-    carbsPer100: parseDraftNumber(draft.carbsPer100) ?? 0,
+    proteinPer100: values.protein,
+    fatPer100: values.fat,
+    carbsPer100: values.carbs,
     kcalPer100: draft.kcalPer100.trim()
-      ? (parseDraftNumber(draft.kcalPer100) ?? getAutoKcalFromDraft(draft))
+      ? (values.kcal ?? getAutoKcalFromDraft(draft))
       : getAutoKcalFromDraft(draft),
+    fiberPer100: values.fiber,
+    magnesiumPer100: values.magnesium,
+    ironPer100: values.iron,
+    zincPer100: values.zinc,
+    omega3Per100: values.omega3,
+    vitaminB12Per100: values.vitaminB12,
     unitMode: draft.unitMode,
     unitLabel: draft.unitMode === "piece" ? draft.unitLabel.trim() : "",
     gramsPerUnit: draft.unitMode === "piece" ? (parseDraftNumber(draft.gramsPerUnit) ?? null) : null,
@@ -298,6 +316,8 @@ function reducer(state: HydratedState, action: Action): HydratedState {
         id: createId("profile"),
         ...action.payload,
         formulaMode: normalizeFormulaMode(action.payload.formulaMode),
+        age: action.payload.age ?? 30,
+        activityLevel: normalizeActivityLevel(action.payload.activityLevel),
         heightCm: action.payload.heightCm ?? null,
         goalWeightKg: action.payload.goalWeightKg ?? action.payload.weightKg,
         createdAt: now,
@@ -318,6 +338,8 @@ function reducer(state: HydratedState, action: Action): HydratedState {
             ? {
                 ...profile,
                 ...action.payload.changes,
+                age: action.payload.changes.age ?? profile.age ?? 30,
+                activityLevel: normalizeActivityLevel(action.payload.changes.activityLevel ?? profile.activityLevel),
                 updatedAt: new Date().toISOString(),
               }
             : profile,
@@ -513,6 +535,22 @@ export function sanitizeNumber(value: string, fallback = 0) {
 
 export function sexLabel(sex: Sex) {
   return sex === "female" ? "Женский" : "Мужской";
+}
+
+export function activityLabel(level: ActivityLevel) {
+  if (level === "light") {
+    return "Легкая активность";
+  }
+
+  if (level === "moderate") {
+    return "Средняя активность";
+  }
+
+  if (level === "high") {
+    return "Высокая активность";
+  }
+
+  return "Сидячий образ жизни";
 }
 
 export function formulaLabel(mode: FormulaMode) {

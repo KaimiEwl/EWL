@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { MealSection } from "@/components/meal-section";
+import { MicronutrientBalanceCard } from "@/components/micronutrient-balance-card";
 import { ProductSearchSheet } from "@/components/product-search-sheet";
 import { formatFullDate, getTodayDate } from "@/lib/date";
 import {
@@ -119,6 +120,13 @@ export function PlanScreen({ initialDateParam }: { initialDateParam?: string }) 
           onDelete={(itemId) => deleteMealItem(itemId)}
         />
       ))}
+
+      <MicronutrientBalanceCard
+        title="Нутриенты за день"
+        description="Показываю, что еще не добрали по клетчатке и основным микроэлементам."
+        target={summary.target}
+        actual={summary.totals}
+      />
 
       <section className="app-card rounded-[2rem] p-5">
         <h2 className="text-lg font-semibold text-slate-900">Добавить свой прием пищи</h2>

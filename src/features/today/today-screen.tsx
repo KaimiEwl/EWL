@@ -5,6 +5,7 @@ import { useState } from "react";
 import { DaySummaryCard } from "@/components/day-summary-card";
 import { EmptyState } from "@/components/empty-state";
 import { MacroProgressCard } from "@/components/macro-progress-card";
+import { MicronutrientBalanceCard } from "@/components/micronutrient-balance-card";
 import { ProductSearchSheet } from "@/components/product-search-sheet";
 import { ProfileFocusCard } from "@/components/profile-focus-card";
 import { mealLabels, mealOrder } from "@/lib/constants";
@@ -101,6 +102,13 @@ export function TodayScreen() {
         <MacroProgressCard label="Жиры" consumed={summary.totals.fat} target={summary.target?.fat ?? 0} unit="г" tint="gold" />
         <MacroProgressCard label="Углеводы" consumed={summary.totals.carbs} target={summary.target?.carbs ?? 0} unit="г" tint="mint" />
       </section>
+
+      <MicronutrientBalanceCard
+        title="Нутриенты за день"
+        description="Коротко показываю, чего еще не хватает по микроэлементам."
+        target={summary.target}
+        actual={summary.totals}
+      />
 
       <section className="app-card rounded-[2rem] p-5">
         <div className="flex items-center justify-between gap-3">
