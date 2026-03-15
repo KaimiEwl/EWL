@@ -15,6 +15,7 @@ const inputClass =
 export function ProductFormSheet({
   mode,
   product,
+  initialDraft,
   usageCount = 0,
   onClose,
   onSave,
@@ -22,12 +23,13 @@ export function ProductFormSheet({
 }: {
   mode: "create" | "edit";
   product?: Product;
+  initialDraft?: ProductDraft;
   usageCount?: number;
   onClose: () => void;
   onSave: (draft: ProductDraft) => void;
   onDelete?: () => void;
 }) {
-  const [draft, setDraft] = useState<ProductDraft>(() => toProductDraft(product));
+  const [draft, setDraft] = useState<ProductDraft>(() => initialDraft ?? toProductDraft(product));
   const [confirmDelete, setConfirmDelete] = useState(false);
   const validation = useMemo(() => validateProductDraft(draft), [draft]);
   const autoKcal = useMemo(() => getAutoKcalFromDraft(draft), [draft]);

@@ -2,22 +2,25 @@
 
 import { useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
+import { ProductAiAssistantCard } from "@/components/product-ai-assistant-card";
 import { ProductAvatar } from "@/components/product-avatar";
 import { ProductFormSheet } from "@/components/product-form-sheet";
 import { getProductQuantityMode, getProductUnitLabel, rankProducts } from "@/lib/products";
 import { getActiveProducts, getProductUsageCount } from "@/lib/selectors";
-import type { Product } from "@/lib/types";
+import type { Product, ProductDraft } from "@/lib/types";
 import { useAppStore } from "@/store/app-store";
 
 const PAGE_SIZE = 20;
+type EditorState =
+  | { mode: "create"; draft?: ProductDraft; stamp: number }
+  | { mode: "edit"; product: Product; stamp: number }
+  | null;
 
 export function ProductsScreen() {
   const { state, createProduct, updateProduct, deleteProduct } = useAppStore();
   const [query, setQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [editorState, setEditorState] = useState<{ mode: "create" } | { mode: "edit"; product: Product } | null>(
-    null,
-  );
+  const [editorState, setEditorState] = useState<EditorState>(null);
 
   const products = getActiveProducts(state);
   const filteredProducts = useMemo(() => rankProducts(products, query), [products, query]);
@@ -40,7 +43,7 @@ export function ProductsScreen() {
 
         <button
           type="button"
-          onClick={() => setEditorState({ mode: "create" })}
+          onClick={() => setEditorState({ mode: "create", stamp: Date.now() })}
           className="theme-accent-button mt-4 flex min-h-12 w-full items-center justify-center rounded-[1.2rem] px-5 py-3 text-sm font-semibold"
         >
           Добавить
@@ -57,6 +60,13 @@ export function ProductsScreen() {
           </div>
         </div>
       </section>
+
+      <ProductAiAssistantCard
+        currentPath="/products"
+        onUseDraft={(draft) => {
+          setEditorState({ mode: "create", draft, stamp: Date.now() });
+        }}
+      />
 
       <section className="app-card rounded-[2rem] p-4">
         <input
@@ -111,7 +121,7 @@ export function ProductsScreen() {
                     <div className="mt-4">
                       <button
                         type="button"
-                        onClick={() => setEditorState({ mode: "edit", product })}
+                        onClick={() => setEditorState({ mode: "edit", product, stamp: Date.now() })}
                         className="theme-elevated min-h-11 w-full rounded-[1rem] px-4 py-3 text-sm font-semibold text-slate-700"
                       >
                         Править
@@ -140,7 +150,7 @@ export function ProductsScreen() {
           action={
             <button
               type="button"
-              onClick={() => setEditorState({ mode: "create" })}
+              onClick={() => setEditorState({ mode: "create", stamp: Date.now() })}
               className="theme-accent-button rounded-[1rem] px-5 py-3 text-sm font-semibold"
             >
               Добавить продукт
@@ -151,14 +161,17 @@ export function ProductsScreen() {
 
       {editorState ? (
         <ProductFormSheet
-          key={editorState.mode === "edit" ? editorState.product.id : "create"}
+          key={editorState.mode === "edit" ? `edit-${editorState.product.id}` : `create-${editorState.stamp}`}
           mode={editorState.mode}
           product={editorState.mode === "edit" ? editorState.product : undefined}
+          initialDraft={editorState.mode === "create" ? editorState.draft : undefined}
           usageCount={editorState.mode === "edit" ? getProductUsageCount(state, editorState.product.id) : 0}
           onClose={() => setEditorState(null)}
           onSave={(draft) => {
             if (editorState.mode === "create") {
               createProduct(draft);
+              setQuery(draft.name);
+              setVisibleCount(PAGE_SIZE);
             } else {
               updateProduct(editorState.product.id, draft);
             }
