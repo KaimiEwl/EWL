@@ -33,7 +33,14 @@ export function CalendarScreen() {
 
   const summaryMap = getMonthSummaryMap(state, user, monthDate);
   const stats = getMonthStats(state, user, monthDate);
-  const monthlyBalancePositive = stats.totalBalanceKcal >= 0;
+  const now = new Date();
+  const isCurrentMonth =
+    monthDate.getMonth() === now.getMonth() && monthDate.getFullYear() === now.getFullYear();
+  const isFutureMonth =
+    monthDate.getFullYear() > now.getFullYear() ||
+    (monthDate.getFullYear() === now.getFullYear() && monthDate.getMonth() > now.getMonth());
+  const canShowFinalMonthResult = !isCurrentMonth && !isFutureMonth && stats.daysLogged > 0;
+  const monthResultPositive = stats.totalBalanceKcal >= 0;
 
   return (
     <div className="space-y-4">
@@ -69,18 +76,46 @@ export function CalendarScreen() {
               <div className="text-xs uppercase tracking-[0.16em] text-[var(--color-mint)]/70">Дней в норме</div>
               <div className="mt-2 text-2xl font-semibold text-[var(--color-mint)]">{stats.daysWithin}</div>
             </div>
-            <div
-              className={`col-span-2 rounded-[1.35rem] px-4 py-4 text-sm ${
-                monthlyBalancePositive ? "bg-[var(--color-mint-soft)] text-slate-700" : "bg-[var(--color-danger-soft)] text-slate-700"
-              }`}
-            >
-              <div className="text-xs uppercase tracking-[0.16em] text-slate-500">Итог месяца</div>
-              <div className="mt-2 text-lg font-semibold text-slate-900">
-                {monthlyBalancePositive
-                  ? `Вы не добрали ${stats.totalBalanceKcal} ккал относительно цели месяца`
-                  : `Вы превысили месячную цель на ${Math.abs(stats.totalBalanceKcal)} ккал`}
+
+            {canShowFinalMonthResult ? (
+              <div
+                className={`col-span-2 rounded-[1.35rem] px-4 py-4 text-sm ${
+                  monthResultPositive ? "bg-[var(--color-mint-soft)] text-slate-700" : "bg-[var(--color-danger-soft)] text-slate-700"
+                }`}
+              >
+                <div className="text-xs uppercase tracking-[0.16em] text-slate-500">Итог месяца</div>
+                <div className="mt-3 grid grid-cols-3 gap-3">
+                  <div className="rounded-[1rem] bg-white/70 px-3 py-3">
+                    <div className="text-[11px] uppercase tracking-[0.14em] text-slate-400">Цель</div>
+                    <div className="mt-1 font-semibold text-slate-900">{stats.totalTargetKcal} ккал</div>
+                  </div>
+                  <div className="rounded-[1rem] bg-white/70 px-3 py-3">
+                    <div className="text-[11px] uppercase tracking-[0.14em] text-slate-400">Факт</div>
+                    <div className="mt-1 font-semibold text-slate-900">{stats.totalActualKcal} ккал</div>
+                  </div>
+                  <div className="rounded-[1rem] bg-white/70 px-3 py-3">
+                    <div className="text-[11px] uppercase tracking-[0.14em] text-slate-400">Итог</div>
+                    <div className="mt-1 font-semibold text-slate-900">
+                      {monthResultPositive ? `-${stats.totalBalanceKcal}` : `+${Math.abs(stats.totalBalanceKcal)}`} ккал
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 text-sm text-slate-700">
+                  {monthResultPositive
+                    ? "По итогам месяца получилось ниже цели."
+                    : "По итогам месяца получилось выше цели."}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="col-span-2 rounded-[1.35rem] bg-white px-4 py-4 text-sm text-slate-600">
+                <div className="text-xs uppercase tracking-[0.16em] text-slate-400">Итог месяца</div>
+                <div className="mt-2 text-base font-semibold text-slate-900">Завершите месяц, чтобы получить итоговую статистику.</div>
+                <div className="mt-2">
+                  Когда месяц закончится, здесь покажу итог по калориям: цель, факт и общий результат за месяц.
+                </div>
+              </div>
+            )}
+
             <div className="col-span-2 rounded-[1.35rem] bg-white px-4 py-4 text-sm text-slate-600">
               <div className="text-xs uppercase tracking-[0.16em] text-slate-400">Средние Б/Ж/У</div>
               <div className="mt-3 grid grid-cols-3 gap-3">
@@ -100,13 +135,21 @@ export function CalendarScreen() {
         )}
       </section>
 
-      {stats.daysLogged ? (
+      {stats.daysLogged && canShowFinalMonthResult ? (
         <MicronutrientBalanceCard
           title="Нутриенты за месяц"
-          description="Суммирую только те дни месяца, которые уже были заполнены."
+          description="Показываю итог по нутриентам за завершенный месяц."
           target={stats.totalTargetNutrition}
           actual={stats.totalActualNutrition}
         />
+      ) : stats.daysLogged ? (
+        <section className="app-card rounded-[2rem] p-5 text-sm text-slate-600">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Нутриенты за месяц</div>
+          <div className="mt-2 text-base font-semibold text-slate-900">Завершите месяц, чтобы получить статистику.</div>
+          <div className="mt-2">
+            После завершения месяца здесь покажу, чего в итоге не хватило или что удалось закрыть по нутриентам.
+          </div>
+        </section>
       ) : null}
 
       <section className="app-card rounded-[2rem] p-5">
