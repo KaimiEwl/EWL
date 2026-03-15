@@ -23,10 +23,13 @@ export function ProductAiAssistantCard({
   const [error, setError] = useState("");
   const [answer, setAnswer] = useState("");
   const [productSuggestion, setProductSuggestion] = useState<ProductAiSuggestion | null>(null);
+  const [showKeySettings, setShowKeySettings] = useState(true);
   const hydratedKeyRef = useRef(false);
 
   useEffect(() => {
-    setApiKey(loadLocalDeepSeekApiKey());
+    const storedKey = loadLocalDeepSeekApiKey();
+    setApiKey(storedKey);
+    setShowKeySettings(!storedKey);
     hydratedKeyRef.current = true;
   }, []);
 
@@ -52,25 +55,42 @@ export function ProductAiAssistantCard({
       </div>
 
       <div className="mt-4 rounded-[1.4rem] bg-white/80 px-4 py-4">
-        <label className="text-sm font-medium text-slate-600">
-          Ключ DeepSeek
-          <input
-            className={inputClass}
-            value={apiKey}
-            onChange={(event) => setApiKey(event.target.value)}
-            placeholder="Вставьте свой DeepSeek API key"
-          />
-        </label>
-        <div className="mt-3 flex items-center justify-between gap-3">
-          <div className="text-xs text-slate-500">Ключ сохраняется автоматически в этом браузере.</div>
-          <button
-            type="button"
-            onClick={() => setApiKey("")}
-            className="theme-elevated rounded-[1rem] px-4 py-3 text-sm font-semibold text-slate-700"
-          >
-            Очистить
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setShowKeySettings((current) => !current)}
+          className="flex w-full items-center justify-between text-left"
+        >
+          <div>
+            <div className="text-sm font-medium text-slate-700">Ключ DeepSeek</div>
+            <div className="mt-1 text-xs text-slate-500">
+              {apiKey.trim() ? "Ключ уже сохранен в этом браузере." : "Сюда можно один раз вставить ключ."}
+            </div>
+          </div>
+          <span className="theme-elevated rounded-full px-3 py-2 text-xs font-semibold text-slate-600">
+            {showKeySettings ? "Скрыть" : "Показать"}
+          </span>
+        </button>
+
+        {showKeySettings ? (
+          <div className="mt-4">
+            <input
+              className={inputClass}
+              value={apiKey}
+              onChange={(event) => setApiKey(event.target.value)}
+              placeholder="Вставьте свой DeepSeek API key"
+            />
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <div className="text-xs text-slate-500">Ключ сохраняется автоматически в этом браузере.</div>
+              <button
+                type="button"
+                onClick={() => setApiKey("")}
+                className="theme-elevated rounded-[1rem] px-4 py-3 text-sm font-semibold text-slate-700"
+              >
+                Очистить
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-4 grid gap-4">

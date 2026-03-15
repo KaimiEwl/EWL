@@ -18,12 +18,21 @@ export function getVisibleProducts(products: Product[]) {
 
 export function rankProducts(products: Product[], query: string) {
   const normalized = normalizeSearchValue(query);
+  const raw = query.trim().toLowerCase();
+  const compactQuery = collapseSearchValue(query);
+
   if (!normalized) {
     return getVisibleProducts(products).sort((left, right) => left.name.localeCompare(right.name, "ru"));
   }
 
   return getVisibleProducts(products)
-    .filter((product) => getSearchableVariants(product).some((value) => value.includes(normalized)))
+    .filter((product) =>
+      getSearchableVariants(product).some((value) => {
+        const lowered = value.toLowerCase();
+        const compactValue = collapseSearchValue(value);
+        return lowered.includes(raw) || value.includes(normalized) || compactValue.includes(compactQuery);
+      }),
+    )
     .sort((left, right) => {
       const leftScore = Math.max(...getSearchableVariants(left).map((value) => getSearchScore(value, normalized)));
       const rightScore = Math.max(...getSearchableVariants(right).map((value) => getSearchScore(value, normalized)));
@@ -63,6 +72,10 @@ function getAliasTerms(product: Product) {
 
   if (source.includes("пиц")) {
     aliases.push("пицца");
+  }
+
+  if (source.includes("творог")) {
+    aliases.push("творожок");
   }
 
   return aliases;
@@ -153,9 +166,7 @@ export function getDraftNutritionPer100(draft: ProductDraft) {
     protein: convertInputToPer100(draft.proteinPer100, draft) ?? 0,
     fat: convertInputToPer100(draft.fatPer100, draft) ?? 0,
     carbs: convertInputToPer100(draft.carbsPer100, draft) ?? 0,
-    kcal: draft.kcalPer100.trim()
-      ? convertInputToPer100(draft.kcalPer100, draft)
-      : null,
+    kcal: draft.kcalPer100.trim() ? convertInputToPer100(draft.kcalPer100, draft) : null,
     fiber: convertInputToPer100(draft.fiberPer100, draft) ?? 0,
     magnesium: convertInputToPer100(draft.magnesiumPer100, draft) ?? 0,
     iron: convertInputToPer100(draft.ironPer100, draft) ?? 0,

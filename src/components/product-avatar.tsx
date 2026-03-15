@@ -137,22 +137,156 @@ function EggIcon() {
   );
 }
 
+function NeutralFoodIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-[1.2em] w-[1.2em]" aria-hidden="true">
+      <path d="M7 9h10l-1 5.6A2.7 2.7 0 0 1 13.3 17h-2.6A2.7 2.7 0 0 1 8 14.6L7 9Z" fill="currentColor" opacity="0.9" />
+      <path d="M9 6.8c.4-1.2 1.5-2 2.9-2s2.5.8 2.9 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function getCategory(name: string): IconCategory {
-  const source = name.toLowerCase();
+  const source = name.toLowerCase().replaceAll("ё", "е");
 
   if (source.includes("авок")) return "fruit";
-  if (source.includes("банан") || source.includes("яблок") || source.includes("груш") || source.includes("апельс") || source.includes("мандарин") || source.includes("киви") || source.includes("ягод") || source.includes("вишн") || source.includes("клубн") || source.includes("черник") || source.includes("малин")) return "fruit";
-  if (source.includes("огур") || source.includes("помид") || source.includes("овощ") || source.includes("салат") || source.includes("капуст") || source.includes("морков") || source.includes("перец") || source.includes("брокк") || source.includes("кабач") || source.includes("лук") || source.includes("гриб")) return "vegetable";
-  if (source.includes("яйц")) return "dairy";
-  if (source.includes("твор") || source.includes("йогур") || source.includes("кеф") || source.includes("молок") || source.includes("сыр") || source.includes("ряж") || source.includes("смет")) return "dairy";
-  if (source.includes("лосос") || source.includes("тунец") || source.includes("рыб") || source.includes("сельд") || source.includes("кревет") || source.includes("форел")) return "fish";
-  if (source.includes("кур") || source.includes("индей") || source.includes("говя") || source.includes("свин") || source.includes("мяс") || source.includes("ветчин") || source.includes("колбас") || source.includes("сосиск")) return "protein";
-  if (source.includes("рис") || source.includes("греч") || source.includes("овся") || source.includes("круп") || source.includes("макарон") || source.includes("паст") || source.includes("булгур") || source.includes("чечев") || source.includes("фасол") || source.includes("нут")) return "grain";
-  if (source.includes("хлеб") || source.includes("тост") || source.includes("лаваш")) return "bread";
-  if (source.includes("масл")) return "fat";
-  if (source.includes("орех") || source.includes("миндал") || source.includes("фисташ") || source.includes("арахис") || source.includes("семеч")) return "nuts";
-  if (source.includes("кофе") || source.includes("чай") || source.includes("какао") || source.includes("сок") || source.includes("напит")) return "drink";
-  if (source.includes("пиц") || source.includes("чоко") || source.includes("шокол") || source.includes("батон") || source.includes("печень") || source.includes("конф") || source.includes("морожен") || source.includes("торт")) return "sweet";
+  if (
+    source.includes("банан") ||
+    source.includes("яблок") ||
+    source.includes("груш") ||
+    source.includes("апельс") ||
+    source.includes("мандарин") ||
+    source.includes("киви") ||
+    source.includes("ягод") ||
+    source.includes("вишн") ||
+    source.includes("клубн") ||
+    source.includes("черник") ||
+    source.includes("малин") ||
+    source.includes("ананас") ||
+    source.includes("виноград") ||
+    source.includes("персик")
+  ) {
+    return "fruit";
+  }
+
+  if (
+    source.includes("огур") ||
+    source.includes("помид") ||
+    source.includes("овощ") ||
+    source.includes("салат") ||
+    source.includes("капуст") ||
+    source.includes("морков") ||
+    source.includes("перец") ||
+    source.includes("брокк") ||
+    source.includes("кабач") ||
+    source.includes("лук") ||
+    source.includes("гриб") ||
+    source.includes("свекл") ||
+    source.includes("редис") ||
+    source.includes("тыкв")
+  ) {
+    return "vegetable";
+  }
+
+  if (source.includes("яйц")) {
+    return "dairy";
+  }
+
+  if (
+    source.includes("твор") ||
+    source.includes("йогур") ||
+    source.includes("кеф") ||
+    source.includes("молок") ||
+    source.includes("сыр") ||
+    source.includes("ряж") ||
+    source.includes("смет") ||
+    source.includes("сливк")
+  ) {
+    return "dairy";
+  }
+
+  if (
+    source.includes("лосос") ||
+    source.includes("тунец") ||
+    source.includes("рыб") ||
+    source.includes("селед") ||
+    source.includes("сельд") ||
+    source.includes("кревет") ||
+    source.includes("форел") ||
+    source.includes("скумбр")
+  ) {
+    return "fish";
+  }
+
+  if (
+    source.includes("кур") ||
+    source.includes("индей") ||
+    source.includes("говя") ||
+    source.includes("свин") ||
+    source.includes("мяс") ||
+    source.includes("ветчин") ||
+    source.includes("колбас") ||
+    source.includes("сосиск") ||
+    source.includes("котлет") ||
+    source.includes("бургер")
+  ) {
+    return "protein";
+  }
+
+  if (
+    source.includes("рис") ||
+    source.includes("греч") ||
+    source.includes("овся") ||
+    source.includes("круп") ||
+    source.includes("макарон") ||
+    source.includes("паст") ||
+    source.includes("булгур") ||
+    source.includes("чечев") ||
+    source.includes("фасол") ||
+    source.includes("нут") ||
+    source.includes("киноа")
+  ) {
+    return "grain";
+  }
+
+  if (source.includes("хлеб") || source.includes("тост") || source.includes("лаваш") || source.includes("булк")) {
+    return "bread";
+  }
+
+  if (source.includes("масл")) {
+    return "fat";
+  }
+
+  if (
+    source.includes("орех") ||
+    source.includes("миндал") ||
+    source.includes("фисташ") ||
+    source.includes("арахис") ||
+    source.includes("семеч") ||
+    source.includes("кешью") ||
+    source.includes("грецк")
+  ) {
+    return "nuts";
+  }
+
+  if (source.includes("кофе") || source.includes("чай") || source.includes("какао") || source.includes("сок") || source.includes("напит")) {
+    return "drink";
+  }
+
+  if (
+    source.includes("пиц") ||
+    source.includes("чоко") ||
+    source.includes("шокол") ||
+    source.includes("батон") ||
+    source.includes("печен") ||
+    source.includes("конф") ||
+    source.includes("морожен") ||
+    source.includes("торт") ||
+    source.includes("халв") ||
+    source.includes("пирож")
+  ) {
+    return "sweet";
+  }
 
   return "neutral";
 }
@@ -213,7 +347,7 @@ function getCategoryIcon(name: string): ReactNode {
     case "nuts":
       return <NutIcon />;
     default:
-      return null;
+      return <NeutralFoodIcon />;
   }
 }
 
@@ -245,7 +379,7 @@ export function ProductAvatar({
 
   if (customEmoji) {
     return (
-      <div className={`product-avatar-shell ${toneClass} flex ${sizeClass} items-center justify-center rounded-full shadow-sm text-xl`}>
+      <div className={`product-avatar-shell ${toneClass} flex ${sizeClass} items-center justify-center rounded-full text-xl shadow-sm`}>
         <span className="translate-y-[1px]">{customEmoji}</span>
       </div>
     );
@@ -254,7 +388,7 @@ export function ProductAvatar({
   if (categoryIcon) {
     return (
       <div
-        className={`product-avatar-shell ${toneClass} flex ${sizeClass} items-center justify-center rounded-full shadow-sm text-[1.25rem]`}
+        className={`product-avatar-shell ${toneClass} flex ${sizeClass} items-center justify-center rounded-full text-[1.25rem] shadow-sm`}
         style={style}
       >
         {categoryIcon}
@@ -264,7 +398,7 @@ export function ProductAvatar({
 
   if (icon?.trim()) {
     return (
-      <div className={`product-avatar-shell ${toneClass} flex ${sizeClass} items-center justify-center rounded-full shadow-sm text-xl`}>
+      <div className={`product-avatar-shell ${toneClass} flex ${sizeClass} items-center justify-center rounded-full text-xl shadow-sm`}>
         {icon}
       </div>
     );
