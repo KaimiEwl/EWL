@@ -9,14 +9,21 @@ import { getActiveProducts, getProductUsageCount } from "@/lib/selectors";
 import type { Product } from "@/lib/types";
 import { useAppStore } from "@/store/app-store";
 
+const PAGE_SIZE = 20;
+
 export function ProductsScreen() {
   const { state, createProduct, updateProduct, deleteProduct } = useAppStore();
   const [query, setQuery] = useState("");
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [editorState, setEditorState] = useState<{ mode: "create" } | { mode: "edit"; product: Product } | null>(
     null,
   );
+
   const products = getActiveProducts(state);
   const filteredProducts = useMemo(() => rankProducts(products, query), [products, query]);
+  const hasSearch = query.trim().length > 0;
+  const visibleProducts = hasSearch ? filteredProducts : filteredProducts.slice(0, visibleCount);
+  const canShowMore = !hasSearch && filteredProducts.length > visibleCount;
 
   if (!state.hydrated) {
     return <div className="app-card rounded-[2rem] p-6 text-sm text-slate-500">Открываю продукты...</div>;
@@ -55,7 +62,10 @@ export function ProductsScreen() {
         <input
           type="search"
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setVisibleCount(PAGE_SIZE);
+          }}
           placeholder="Найти курочку, пиццу, рис, чокопай..."
           className="theme-input h-12 w-full rounded-[1rem] border border-[var(--color-outline)] px-4 outline-none"
         />
@@ -63,7 +73,7 @@ export function ProductsScreen() {
 
       {filteredProducts.length ? (
         <section className="space-y-3">
-          {filteredProducts.map((product) => {
+          {visibleProducts.map((product) => {
             const quantityMode = getProductQuantityMode(product);
             const usageCount = getProductUsageCount(state, product.id);
 
@@ -88,7 +98,9 @@ export function ProductsScreen() {
                         <span className="rounded-full bg-slate-100 px-3 py-1.5 text-slate-600">{product.notes}</span>
                       ) : null}
                       {usageCount ? (
-                        <span className="theme-elevated rounded-full px-3 py-1.5 text-slate-500">Использован {usageCount} раз</span>
+                        <span className="theme-elevated rounded-full px-3 py-1.5 text-slate-500">
+                          Использован {usageCount} раз
+                        </span>
                       ) : null}
                     </div>
 
@@ -113,6 +125,16 @@ export function ProductsScreen() {
               </article>
             );
           })}
+
+          {canShowMore ? (
+            <button
+              type="button"
+              onClick={() => setVisibleCount((current) => current + PAGE_SIZE)}
+              className="theme-elevated min-h-12 w-full rounded-[1.3rem] px-4 py-3 text-sm font-semibold text-slate-700"
+            >
+              Еще {Math.min(PAGE_SIZE, filteredProducts.length - visibleCount)}
+            </button>
+          ) : null}
         </section>
       ) : (
         <EmptyState
