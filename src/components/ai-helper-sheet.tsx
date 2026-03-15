@@ -63,6 +63,10 @@ export function AiHelperSheet({
             <p className="mt-1 text-sm leading-6 text-slate-500">
               Напиши продукт, а я попробую найти нутриенты через AI и соберу карточку, которую можно сразу сохранить.
             </p>
+            <p className="mt-2 text-xs leading-5 text-slate-400">
+              После поиска ничего не сохраняется само. Сначала откроется карточка-черновик, и только потом ты сам
+              нажмешь сохранить.
+            </p>
           </div>
           <button
             type="button"

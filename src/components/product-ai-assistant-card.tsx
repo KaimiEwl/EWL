@@ -52,6 +52,10 @@ export function ProductAiAssistantCard({
           Напиши продукт, и я подтяну КБЖУ и нутриенты. Потом сразу открою обычную карточку продукта, где можно
           проверить и сохранить.
         </p>
+        <p className="mt-2 text-xs leading-5 text-slate-500">
+          После поиска ничего не сохраняется само. Сначала откроется карточка-черновик, и только потом ты сам
+          нажмешь сохранить.
+        </p>
       </div>
 
       <div className="mt-4 rounded-[1.4rem] bg-white/80 px-4 py-4">
@@ -184,7 +188,7 @@ export function ProductAiAssistantCard({
             onClick={() => onUseDraft(productSuggestionToDraft(productSuggestion))}
             className="theme-accent-button mt-4 w-full rounded-[1rem] px-5 py-3 text-sm font-semibold"
           >
-            Открыть карточку продукта
+            Создать карточку продукта
           </button>
         </div>
       ) : null}
