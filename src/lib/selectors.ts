@@ -17,6 +17,14 @@ import type {
   UserProfile,
 } from "@/lib/types";
 
+type NutrientHighlight = {
+  key: keyof NutritionTotals;
+  label: string;
+  value: number;
+  display: string;
+  score: number;
+};
+
 type SuggestionPreset = {
   title: string;
   description: string;
@@ -40,6 +48,31 @@ const suggestionPresets: SuggestionPreset[] = [
     keywords: ["авок", "орех", "сыр", "масл", "семеч"],
   },
 ];
+
+const nutrientHighlightMeta: Array<{
+  key: keyof NutritionTotals;
+  label: string;
+  minValue: number;
+}> = [
+  { key: "fiber", label: "Клч", minValue: 1 },
+  { key: "magnesium", label: "Mg", minValue: 20 },
+  { key: "iron", label: "Fe", minValue: 0.5 },
+  { key: "zinc", label: "Zn", minValue: 0.4 },
+  { key: "omega3", label: "Ω3", minValue: 0.1 },
+  { key: "vitaminB12", label: "B12", minValue: 0.1 },
+];
+
+function formatCompactNutrientValue(value: number) {
+  if (value >= 100) {
+    return String(Math.round(value));
+  }
+
+  if (value >= 10) {
+    return String(Math.round(value * 10) / 10);
+  }
+
+  return String(Math.round(value * 10) / 10);
+}
 
 export function getSelectedUser(state: PersistedAppState) {
   return state.profiles.find((profile) => profile.id === state.selectedUserId) ?? state.profiles[0] ?? null;
@@ -72,6 +105,33 @@ export function getDayEntry(state: PersistedAppState, userId: string, date: stri
 
 export function getProductUsageCount(state: PersistedAppState, productId: string) {
   return state.mealItems.filter((item) => item.productId === productId).length;
+}
+
+export function getProductTopNutrientHighlights(product: Product, user: UserProfile | null, limit = 3) {
+  const target = user ? calculateTargets(user) : null;
+
+  return nutrientHighlightMeta
+    .map<NutrientHighlight | null>((meta) => {
+      const value = product[`${meta.key}Per100` as keyof Product];
+      const numericValue = typeof value === "number" ? value : 0;
+      if (numericValue < meta.minValue) {
+        return null;
+      }
+
+      const targetValue = target ? target[meta.key] : 0;
+      const score = targetValue > 0 ? numericValue / targetValue : numericValue;
+
+      return {
+        key: meta.key,
+        label: meta.label,
+        value: numericValue,
+        display: `${meta.label} ${formatCompactNutrientValue(numericValue)}`,
+        score,
+      };
+    })
+    .filter((item): item is NutrientHighlight => Boolean(item))
+    .sort((left, right) => right.score - left.score)
+    .slice(0, limit);
 }
 
 export function getDaySummary(state: PersistedAppState, user: UserProfile | null, date: string): DaySummary {
@@ -345,5 +405,71 @@ export function getMonthStats(state: PersistedAppState, user: UserProfile | null
     totalTargetNutrition: targetTotals,
     totalActualNutrition: totals,
     totalBalanceNutrition: subtractNutrition(targetTotals, totals),
+  };
+}
+
+export function getEasyDayTopUpSuggestions(summary: DaySummary, products: Product[], user: UserProfile | null) {
+  if (!summary.target || !summary.balance || !user) {
+    return null;
+  }
+
+  if (summary.balance.kcal <= 0) {
+    return null;
+  }
+
+  const deficitMeta = nutrientHighlightMeta
+    .map((meta) => {
+      const targetValue = summary.target?.[meta.key] ?? 0;
+      const actualValue = summary.totals?.[meta.key] ?? 0;
+      const deficit = Math.max(targetValue - actualValue, 0);
+      const ratio = targetValue > 0 ? deficit / targetValue : 0;
+
+      return {
+        ...meta,
+        deficit,
+        ratio,
+      };
+    })
+    .filter((item) => item.deficit > item.minValue)
+    .sort((left, right) => right.ratio - left.ratio);
+
+  if (!deficitMeta.length) {
+    return null;
+  }
+
+  const focusDeficits = deficitMeta.slice(0, 2);
+  const visibleProducts = getVisibleProducts(products);
+  const remainingKcal = Math.max(summary.balance.kcal, 0);
+
+  const suggestions = visibleProducts
+    .map((product) => {
+      const portion = getSuggestedPortion(product);
+      const nutrition = calculateProductNutrition(product, portion.grams);
+      const nutrientScore = focusDeficits.reduce((score, meta) => {
+        const value = nutrition[meta.key];
+        const targetValue = summary.target?.[meta.key] ?? 0;
+        return score + (targetValue > 0 ? value / targetValue : value);
+      }, 0);
+      const kcalPenalty =
+        remainingKcal > 0 ? Math.max(0, nutrition.kcal - Math.max(remainingKcal + 120, remainingKcal * 1.4)) / 60 : 0;
+      const richnessBonus = getProductTopNutrientHighlights(product, user, 3).length * 0.08;
+
+      return {
+        product,
+        portion,
+        score: nutrientScore + richnessBonus - kcalPenalty,
+      };
+    })
+    .filter((item) => item.score > 0)
+    .sort((left, right) => right.score - left.score)
+    .slice(0, 3);
+
+  if (!suggestions.length) {
+    return null;
+  }
+
+  return {
+    deficits: focusDeficits.map((item) => `${item.label} ${formatCompactNutrientValue(item.deficit)}`),
+    products: suggestions.map((item) => `${item.product.name} (${item.portion.label})`),
   };
 }

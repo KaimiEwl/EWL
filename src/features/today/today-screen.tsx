@@ -6,12 +6,14 @@ import { DaySummaryCard } from "@/components/day-summary-card";
 import { EmptyState } from "@/components/empty-state";
 import { MacroProgressCard } from "@/components/macro-progress-card";
 import { MicronutrientBalanceCard } from "@/components/micronutrient-balance-card";
+import { NutrientTopUpCard } from "@/components/nutrient-top-up-card";
 import { ProductSearchSheet } from "@/components/product-search-sheet";
 import { ProfileFocusCard } from "@/components/profile-focus-card";
 import { mealLabels, mealOrder } from "@/lib/constants";
 import { formatFullDate, getTodayDate } from "@/lib/date";
 import {
   getActiveProducts,
+  getEasyDayTopUpSuggestions,
   getDaySummary,
   getProductUsageCount,
   getRecentProducts,
@@ -48,6 +50,8 @@ export function TodayScreen() {
   const kcalBalance = summary.balance?.kcal ?? 0;
   const kcalOver = kcalBalance < 0;
   const mealCandidates = mealOrder;
+  const hasDinner = summary.items.some((item) => item.item.mealType === "dinner");
+  const topUpSuggestion = hasDinner ? getEasyDayTopUpSuggestions(summary, activeProducts, user) : null;
 
   return (
     <div className="space-y-4">
@@ -109,6 +113,14 @@ export function TodayScreen() {
         target={summary.target}
         actual={summary.totals}
       />
+
+      {topUpSuggestion ? (
+        <NutrientTopUpCard
+          title="День уже почти закрыт"
+          deficits={topUpSuggestion.deficits}
+          products={topUpSuggestion.products}
+        />
+      ) : null}
 
       <section className="app-card rounded-[2rem] p-5">
         <div className="flex items-center justify-between gap-3">

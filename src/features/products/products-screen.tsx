@@ -6,7 +6,7 @@ import { ProductAiAssistantCard } from "@/components/product-ai-assistant-card";
 import { ProductAvatar } from "@/components/product-avatar";
 import { ProductFormSheet } from "@/components/product-form-sheet";
 import { getProductQuantityMode, getProductUnitLabel, rankProducts } from "@/lib/products";
-import { getActiveProducts, getProductUsageCount } from "@/lib/selectors";
+import { getActiveProducts, getProductTopNutrientHighlights, getProductUsageCount, getSelectedUser } from "@/lib/selectors";
 import type { Product, ProductDraft } from "@/lib/types";
 import { useAppStore } from "@/store/app-store";
 
@@ -22,6 +22,7 @@ export function ProductsScreen() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [editorState, setEditorState] = useState<EditorState>(null);
 
+  const user = getSelectedUser(state);
   const products = getActiveProducts(state);
   const filteredProducts = useMemo(() => rankProducts(products, query), [products, query]);
   const hasSearch = query.trim().length > 0;
@@ -87,6 +88,7 @@ export function ProductsScreen() {
           {visibleProducts.map((product) => {
             const quantityMode = getProductQuantityMode(product);
             const usageCount = getProductUsageCount(state, product.id);
+            const topHighlights = getProductTopNutrientHighlights(product, user);
 
             return (
               <article key={product.id} className="app-card rounded-[1.75rem] p-4">
@@ -102,6 +104,10 @@ export function ProductsScreen() {
                       Б {product.proteinPer100} • Ж {product.fatPer100} • У {product.carbsPer100} •{" "}
                       {product.kcalPer100 ?? "auto"} ккал
                     </p>
+
+                    {topHighlights.length ? (
+                      <p className="mt-2 text-xs font-medium text-slate-600">{topHighlights.map((item) => item.display).join(" • ")}</p>
+                    ) : null}
 
                     <div className="mt-3 flex flex-wrap gap-2 text-xs">
                       <span className="theme-completed rounded-full px-3 py-1.5 font-semibold">
@@ -170,9 +176,11 @@ export function ProductsScreen() {
           onClose={() => setEditorState(null)}
           onSave={(draft) => {
             if (editorState.mode === "create") {
-              createProduct(draft);
-              setQuery(draft.name);
+              const createdProduct = createProduct(draft);
+              setQuery(createdProduct.name);
               setVisibleCount(PAGE_SIZE);
+              setEditorState({ mode: "edit", product: createdProduct, stamp: Date.now() });
+              return;
             } else {
               updateProduct(editorState.product.id, draft);
             }

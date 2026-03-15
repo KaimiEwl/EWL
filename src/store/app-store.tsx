@@ -38,10 +38,6 @@ type ProfileInput = Pick<
   | "carbsPerKg"
 >;
 
-type ProductInput = {
-  draft: ProductDraft;
-};
-
 type Action =
   | { type: "hydrate"; payload: PersistedAppState }
   | { type: "setThemeMode"; payload: ThemeMode }
@@ -75,7 +71,7 @@ type Action =
   | { type: "createProfile"; payload: ProfileInput }
   | { type: "updateProfile"; payload: { userId: string; changes: Partial<ProfileInput> } }
   | { type: "deleteProfile"; payload: { userId: string } }
-  | { type: "createProduct"; payload: ProductInput }
+  | { type: "createProduct"; payload: { product: Product } }
   | { type: "updateProduct"; payload: { productId: string; draft: ProductDraft } }
   | { type: "deleteProduct"; payload: { productId: string } };
 
@@ -369,11 +365,9 @@ function reducer(state: HydratedState, action: Action): HydratedState {
       };
     }
     case "createProduct": {
-      const product = toProductEntity(action.payload.draft);
-
       return {
         ...state,
-        products: [...state.products, product],
+        products: [...state.products, action.payload.product],
       };
     }
     case "updateProduct": {
@@ -454,7 +448,7 @@ type StoreValue = {
   createProfile: (payload: ProfileInput) => void;
   updateProfile: (userId: string, changes: Partial<ProfileInput>) => void;
   deleteProfile: (userId: string) => void;
-  createProduct: (draft: ProductDraft) => void;
+  createProduct: (draft: ProductDraft) => Product;
   updateProduct: (productId: string, draft: ProductDraft) => void;
   deleteProduct: (productId: string) => void;
 };
@@ -509,7 +503,11 @@ export function AppStoreProvider({ children }: Readonly<{ children: React.ReactN
         createProfile: (payload) => dispatch({ type: "createProfile", payload }),
         updateProfile: (userId, changes) => dispatch({ type: "updateProfile", payload: { userId, changes } }),
         deleteProfile: (userId) => dispatch({ type: "deleteProfile", payload: { userId } }),
-        createProduct: (draft) => dispatch({ type: "createProduct", payload: { draft } }),
+        createProduct: (draft) => {
+          const product = toProductEntity(draft);
+          dispatch({ type: "createProduct", payload: { product } });
+          return product;
+        },
         updateProduct: (productId, draft) => dispatch({ type: "updateProduct", payload: { productId, draft } }),
         deleteProduct: (productId) => dispatch({ type: "deleteProduct", payload: { productId } }),
       }}

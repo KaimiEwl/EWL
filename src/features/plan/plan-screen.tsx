@@ -5,10 +5,12 @@ import { EmptyState } from "@/components/empty-state";
 import { DayAiAssistantCard } from "@/components/day-ai-assistant-card";
 import { MealSection } from "@/components/meal-section";
 import { MicronutrientBalanceCard } from "@/components/micronutrient-balance-card";
+import { NutrientTopUpCard } from "@/components/nutrient-top-up-card";
 import { ProductSearchSheet } from "@/components/product-search-sheet";
 import { formatFullDate, getTodayDate } from "@/lib/date";
 import {
   getActiveProducts,
+  getEasyDayTopUpSuggestions,
   getDaySuggestion,
   getDaySummary,
   getMealSections,
@@ -65,6 +67,10 @@ export function PlanScreen({ initialDateParam }: { initialDateParam?: string }) 
   const recentProducts = getRecentProducts(state, user.id);
   const daySuggestion = getDaySuggestion(summary, activeProducts);
   const dinnerSection = sections.find((section) => section.mealType === "dinner");
+  const topUpSuggestion =
+    dinnerSection?.rows.length || currentDate < getTodayDate()
+      ? getEasyDayTopUpSuggestions(summary, activeProducts, user)
+      : null;
 
   const openMealSheet = (mealType: MealType, mealLabel = "") => {
     setSheetMealType(mealType);
@@ -129,6 +135,10 @@ export function PlanScreen({ initialDateParam }: { initialDateParam?: string }) 
         target={summary.target}
         actual={summary.totals}
       />
+
+      {topUpSuggestion ? (
+        <NutrientTopUpCard title="День почти закрыт" deficits={topUpSuggestion.deficits} products={topUpSuggestion.products} />
+      ) : null}
 
       <DayAiAssistantCard
         summary={summary}
