@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { ProductAvatar } from "@/components/product-avatar";
+import { calculateProductNutrition } from "@/lib/macros";
 import {
   formatAmountValue,
-  formatMealItemQuantity,
   getMealItemAmount,
   getProductQuantityMode,
   toMealItemQuantity,
@@ -23,6 +23,7 @@ export function MealItemRow({
   const mode = getProductQuantityMode(row.product);
   const currentAmount = getMealItemAmount(row.product, row.item);
   const [draft, setDraft] = useState(formatAmountValue(currentAmount));
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     setDraft(formatAmountValue(currentAmount));
@@ -32,12 +33,19 @@ export function MealItemRow({
   const nextAmount = Number(draft.replace(",", "."));
   const nextQuantity =
     Number.isFinite(nextAmount) && nextAmount > 0 ? toMealItemQuantity(row.product, nextAmount) : null;
+  const nextNutrition = nextQuantity ? calculateProductNutrition(row.product, nextQuantity.grams) : null;
   const hasChanges = Boolean(
     nextQuantity &&
       (nextQuantity.grams !== currentQuantity.grams ||
         nextQuantity.quantityMode !== currentQuantity.quantityMode ||
         (nextQuantity.servings ?? null) !== (currentQuantity.servings ?? null)),
   );
+
+  useEffect(() => {
+    if (hasChanges) {
+      setExpanded(true);
+    }
+  }, [hasChanges]);
 
   const stepChange = (step: number) => {
     const draftValue = Number(draft.replace(",", "."));
@@ -68,7 +76,11 @@ export function MealItemRow({
         />
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
+            <button
+              type="button"
+              onClick={() => setExpanded((value) => !value)}
+              className="min-w-0 flex-1 text-left"
+            >
               <p className="truncate text-[15px] font-semibold text-slate-900">{row.product.name}</p>
               <div className="mt-1 flex flex-wrap gap-1.5 text-[11px] font-medium text-slate-500">
                 {row.product.isCustom ? (
@@ -76,9 +88,22 @@ export function MealItemRow({
                     Свой продукт
                   </span>
                 ) : null}
+                <span className="theme-elevated rounded-full px-2 py-1">
+                  {currentQuantity.quantityMode === "piece"
+                    ? `${formatAmountValue(currentAmount)} ${row.product.unitLabel?.trim() || "шт."}`
+                    : `${currentQuantity.grams} г`}
+                </span>
                 <span className="theme-elevated rounded-full px-2 py-1">{row.nutrition.kcal} ккал</span>
               </div>
-            </div>
+            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setExpanded((value) => !value)}
+                className="theme-elevated rounded-full px-3 py-1.5 text-xs font-semibold text-slate-700"
+              >
+                {expanded ? "Свернуть" : "Развернуть"}
+              </button>
             <button
               type="button"
               onClick={onDelete}
@@ -86,63 +111,91 @@ export function MealItemRow({
             >
               Удалить
             </button>
+            </div>
           </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-500">
-            <div className="rounded-[1rem] bg-slate-50 px-3 py-2">Б {row.nutrition.protein}</div>
-            <div className="rounded-[1rem] bg-slate-50 px-3 py-2">Ж {row.nutrition.fat}</div>
-            <div className="rounded-[1rem] bg-slate-50 px-3 py-2">У {row.nutrition.carbs}</div>
-            <div className="rounded-[1rem] bg-slate-50 px-3 py-2">{formatMealItemQuantity(row.product, row.item)}</div>
-          </div>
+          {expanded ? (
+            <>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-500">
+                <div className="rounded-[1rem] bg-slate-50 px-3 py-2">Б {row.nutrition.protein}</div>
+                <div className="rounded-[1rem] bg-slate-50 px-3 py-2">Ж {row.nutrition.fat}</div>
+                <div className="rounded-[1rem] bg-slate-50 px-3 py-2">У {row.nutrition.carbs}</div>
+                <div className="rounded-[1rem] bg-slate-50 px-3 py-2">
+                  {currentQuantity.quantityMode === "piece"
+                    ? `${formatAmountValue(currentAmount)} ${row.product.unitLabel?.trim() || "шт."}`
+                    : `${currentQuantity.grams} г`}
+                </div>
+              </div>
 
-          <div className="mt-3 grid grid-cols-[auto_auto_1fr_auto_auto] items-center gap-2">
-            <button
-              type="button"
-              onClick={() => stepChange(steps[0])}
-              className="h-11 rounded-[1rem] bg-slate-100 px-3 text-sm font-semibold text-slate-700"
-            >
-              {steps[0]}
-            </button>
-            <button
-              type="button"
-              onClick={() => stepChange(steps[1])}
-              className="h-11 rounded-[1rem] bg-slate-100 px-3 text-sm font-semibold text-slate-700"
-            >
-              {steps[1]}
-            </button>
-            <input
-              type="number"
-              min="0.1"
-              step={mode === "piece" ? "0.5" : "1"}
-              inputMode="decimal"
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              className="h-11 min-w-0 rounded-[1rem] border border-[var(--color-outline)] bg-white px-3 text-center text-base font-semibold outline-none"
-            />
-            <button
-              type="button"
-              onClick={() => stepChange(steps[2])}
-              className="theme-status-positive h-11 rounded-[1rem] px-3 text-sm font-semibold"
-            >
-              +{steps[2]}
-            </button>
-            <button
-              type="button"
-              onClick={() => stepChange(steps[3])}
-              className="theme-status-positive h-11 rounded-[1rem] px-3 text-sm font-semibold"
-            >
-              +{steps[3]}
-            </button>
-          </div>
+              <div className="theme-elevated mt-3 rounded-[1rem] px-3 py-3 text-xs text-slate-600">
+                <div className="font-semibold text-slate-800">
+                  Сейчас:{" "}
+                  {currentQuantity.quantityMode === "piece"
+                    ? `${formatAmountValue(currentAmount)} ${row.product.unitLabel?.trim() || "шт."}`
+                    : `${currentQuantity.grams} г`}{" "}
+                  • {row.nutrition.kcal} ккал
+                </div>
+                {hasChanges && nextQuantity && nextNutrition ? (
+                  <div className="mt-1">
+                    Будет:{" "}
+                    {nextQuantity.quantityMode === "piece"
+                      ? `${formatAmountValue(nextAmount)} ${row.product.unitLabel?.trim() || "шт."}`
+                      : `${nextQuantity.grams} г`}{" "}
+                    • {nextNutrition.kcal} ккал
+                  </div>
+                ) : null}
+              </div>
 
-          {hasChanges ? (
-            <button
-              type="button"
-              onClick={saveDraft}
-              className="theme-accent-button mt-3 h-11 w-full rounded-[1rem] px-4 text-sm font-semibold"
-            >
-              Сохранить
-            </button>
+              <div className="mt-3 grid grid-cols-[auto_auto_1fr_auto_auto] items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => stepChange(steps[0])}
+                  className="h-11 rounded-[1rem] bg-slate-100 px-3 text-sm font-semibold text-slate-700"
+                >
+                  {steps[0]}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => stepChange(steps[1])}
+                  className="h-11 rounded-[1rem] bg-slate-100 px-3 text-sm font-semibold text-slate-700"
+                >
+                  {steps[1]}
+                </button>
+                <input
+                  type="number"
+                  min="0.1"
+                  step={mode === "piece" ? "0.5" : "1"}
+                  inputMode="decimal"
+                  value={draft}
+                  onChange={(event) => setDraft(event.target.value)}
+                  className="h-11 min-w-0 rounded-[1rem] border border-[var(--color-outline)] bg-white px-3 text-center text-base font-semibold outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => stepChange(steps[2])}
+                  className="theme-status-positive h-11 rounded-[1rem] px-3 text-sm font-semibold"
+                >
+                  +{steps[2]}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => stepChange(steps[3])}
+                  className="theme-status-positive h-11 rounded-[1rem] px-3 text-sm font-semibold"
+                >
+                  +{steps[3]}
+                </button>
+              </div>
+
+              {hasChanges ? (
+                <button
+                  type="button"
+                  onClick={saveDraft}
+                  className="theme-accent-button mt-3 h-11 w-full rounded-[1rem] px-4 text-sm font-semibold"
+                >
+                  Сохранить
+                </button>
+              ) : null}
+            </>
           ) : null}
         </div>
       </div>
