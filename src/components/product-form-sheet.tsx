@@ -1,6 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { askAiHelper } from "@/lib/ai/deepseek";
+import { mergeSuggestionIntoDraft } from "@/lib/ai/product-draft";
+import { loadLocalDeepSeekApiKey } from "@/lib/ai/storage";
 import {
   getAutoKcalFromDraft,
   switchDraftNutritionInputMode,
@@ -31,9 +34,36 @@ export function ProductFormSheet({
 }) {
   const [draft, setDraft] = useState<ProductDraft>(() => initialDraft ?? toProductDraft(product));
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [aiFilling, setAiFilling] = useState(false);
+  const [aiMessage, setAiMessage] = useState("");
+  const [aiError, setAiError] = useState("");
   const validation = useMemo(() => validateProductDraft(draft), [draft]);
   const autoKcal = useMemo(() => getAutoKcalFromDraft(draft), [draft]);
   const inputModeLabel = draft.nutritionInputMode === "perUnit" ? "1 шт" : "100 г";
+
+  const canAskAi = Boolean(draft.name.trim());
+
+  function buildAiCardContext() {
+    const pieces = [
+      `Текущая карточка: ${draft.name.trim()}.`,
+      `Режим продукта: ${draft.unitMode === "piece" ? "по штукам" : "по граммам"}.`,
+      `Режим ввода: ${draft.nutritionInputMode === "perUnit" ? "за 1 шт" : "на 100 г"}.`,
+    ];
+
+    if (draft.unitMode === "piece" || draft.nutritionInputMode === "perUnit") {
+      pieces.push(`Единица: ${draft.unitLabel || "не указана"}, вес 1 шт: ${draft.gramsPerUnit || "не указан"} г.`);
+    }
+
+    pieces.push(
+      `Текущие значения карточки: Б ${draft.proteinPer100 || "пусто"}, Ж ${draft.fatPer100 || "пусто"}, У ${draft.carbsPer100 || "пусто"}, Ккал ${draft.kcalPer100 || "пусто"}, Клетчатка ${draft.fiberPer100 || "пусто"}, Магний ${draft.magnesiumPer100 || "пусто"}, Железо ${draft.ironPer100 || "пусто"}, Цинк ${draft.zincPer100 || "пусто"}, Омега-3 ${draft.omega3Per100 || "пусто"}, B12 ${draft.vitaminB12Per100 || "пусто"}.`,
+    );
+
+    pieces.push(
+      "Нужно дополнить карточку продукта по возможности реальными данными состава и аккуратно заполнить недостающие нутриенты, не ломая уже введенные значения.",
+    );
+
+    return pieces.join(" ");
+  }
 
   return (
     <div className="theme-overlay fixed inset-0 z-[60] flex items-end p-3">
@@ -282,6 +312,56 @@ export function ProductFormSheet({
           </div>
         </div>
 
+        <div className="theme-important mt-4 rounded-[1.35rem] px-4 py-4 text-sm">
+          <div className="font-semibold text-slate-800">AI поможет дополнить карточку</div>
+          <div className="mt-1 leading-6 text-slate-700">
+            Если в карточке не хватает нутриентов, можно попросить AI аккуратно подтянуть их по текущим данным продукта.
+          </div>
+          <div className="mt-2 text-xs leading-5 text-slate-500">
+            AI заполнит черновик, а сохранять изменения вы все равно будете сами после проверки.
+          </div>
+          <button
+            type="button"
+            onClick={async () => {
+              const apiKey = loadLocalDeepSeekApiKey();
+              if (!apiKey.trim()) {
+                setAiError("Сначала добавьте ключ DeepSeek в помощнике творожка.");
+                setAiMessage("");
+                return;
+              }
+
+              setAiFilling(true);
+              setAiError("");
+              setAiMessage("");
+
+              try {
+                const result = await askAiHelper({
+                  apiKey,
+                  mode: "product",
+                  currentPath: "/products",
+                  question:
+                    "Дополнить текущую карточку продукта. Сохрани уже известные значения как основу и аккуратно заполни недостающие нутриенты и калорийность по возможности реальными данными состава.",
+                  productName: draft.name,
+                  productContext: buildAiCardContext(),
+                });
+
+                if (result.mode === "product") {
+                  setDraft((current) => mergeSuggestionIntoDraft(current, result.product));
+                  setAiMessage(result.answer || "AI аккуратно дополнил пустые поля карточки. Проверьте значения и сохраните, если все подходит.");
+                }
+              } catch (requestError) {
+                setAiError(requestError instanceof Error ? requestError.message : "Не удалось попросить AI заполнить карточку.");
+              } finally {
+                setAiFilling(false);
+              }
+            }}
+            disabled={aiFilling || !canAskAi}
+            className="theme-accent-button mt-4 min-h-12 w-full rounded-[1.1rem] px-5 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            {aiFilling ? "AI дополняет карточку..." : "Попросить AI заполнить"}
+          </button>
+        </div>
+
         <div className="theme-important mt-4 rounded-[1.25rem] px-4 py-3 text-sm">
           <div className="font-semibold text-slate-800">Калории</div>
           <div className="mt-1">
@@ -293,6 +373,15 @@ export function ProductFormSheet({
 
         {!validation.valid ? (
           <div className="theme-status-warning mt-4 rounded-[1.1rem] px-4 py-3 text-sm">{validation.message}</div>
+        ) : null}
+
+        {aiError ? <div className="theme-status-warning mt-4 rounded-[1.1rem] px-4 py-3 text-sm">{aiError}</div> : null}
+
+        {aiMessage ? (
+          <div className="theme-elevated mt-4 rounded-[1.1rem] px-4 py-3 text-sm leading-6 text-slate-700">
+            <div className="font-semibold text-slate-900">Что сделал AI</div>
+            <div className="mt-1">{aiMessage}</div>
+          </div>
         ) : null}
 
         {mode === "edit" && onDelete ? (
