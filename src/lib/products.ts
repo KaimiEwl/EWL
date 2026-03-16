@@ -42,15 +42,15 @@ export function rankProducts(products: Product[], query: string) {
 
   return getVisibleProducts(products)
     .filter((product) =>
-      getSearchableVariants(product).some((value) => {
+      getSearchableVariants(product).some(({ value }) => {
         const lowered = value.toLowerCase();
         const compactValue = collapseSearchValue(value);
         return lowered.includes(raw) || value.includes(normalized) || compactValue.includes(compactQuery);
       }),
     )
     .sort((left, right) => {
-      const leftScore = Math.max(...getSearchableVariants(left).map((value) => getSearchScore(value, normalized)));
-      const rightScore = Math.max(...getSearchableVariants(right).map((value) => getSearchScore(value, normalized)));
+      const leftScore = getProductSearchScore(left, normalized);
+      const rightScore = getProductSearchScore(right, normalized);
 
       if (leftScore !== rightScore) {
         return rightScore - leftScore;
@@ -258,12 +258,30 @@ function getAliasTerms(product: Product) {
   return aliases;
 }
 
+type SearchVariantSource = "name" | "searchTerm" | "alias";
+
+type SearchVariant = {
+  value: string;
+  source: SearchVariantSource;
+};
+
 function getSearchableVariants(product: Product) {
-  const values = [product.name, ...(product.searchTerms ?? []), ...getAliasTerms(product)];
-  return values.flatMap((value) => {
+  const values: SearchVariant[] = [
+    { value: product.name, source: "name" },
+    ...(product.searchTerms ?? []).map((value) => ({ value, source: "searchTerm" as const })),
+    ...getAliasTerms(product).map((value) => ({ value, source: "alias" as const })),
+  ];
+
+  return values.flatMap((entry) => {
+    const { value, source } = entry;
     const normalized = normalizeSearchValue(value);
     const compact = collapseSearchValue(value);
-    return compact && compact !== normalized ? [normalized, compact] : [normalized];
+    return compact && compact !== normalized
+      ? [
+          { value: normalized, source },
+          { value: compact, source },
+        ]
+      : [{ value: normalized, source }];
   });
 }
 
@@ -281,6 +299,34 @@ function getSearchScore(name: string, query: string) {
   }
 
   return 1;
+}
+
+function getSourceWeight(source: SearchVariantSource) {
+  switch (source) {
+    case "name":
+      return 100;
+    case "alias":
+      return 35;
+    default:
+      return 0;
+  }
+}
+
+function getProductSearchScore(product: Product, query: string) {
+  const variants = getSearchableVariants(product);
+  const bestVariantScore = Math.max(
+    ...variants.map(({ value, source }) => getSearchScore(value, query) * 100 + getSourceWeight(source)),
+  );
+
+  const normalizedName = normalizeSearchValue(product.name);
+  const canonicalName = normalizeDedupName(product.name);
+  const exactCanonicalBonus = canonicalName === query ? 140 : 0;
+  const prefixCanonicalBonus = canonicalName.startsWith(query) ? 90 : 0;
+  const prefixNameBonus = normalizedName.startsWith(query) ? 60 : 0;
+  const wordStartBonus = normalizedName.split(/\s+/).some((part) => part.startsWith(query)) ? 25 : 0;
+  const shorterNameBonus = Math.max(0, 30 - Math.min(normalizedName.length, 30));
+
+  return bestVariantScore + exactCanonicalBonus + prefixCanonicalBonus + prefixNameBonus + wordStartBonus + shorterNameBonus;
 }
 
 function toPerUnitValue(value: number | null | undefined, gramsPerUnit: number | null | undefined) {
