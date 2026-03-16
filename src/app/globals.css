@@ -4,11 +4,14 @@
   --color-shell: #f5f2ec;
   --color-surface: rgba(255, 252, 248, 0.97);
   --color-surface-strong: #ffffff;
+  --color-surface-muted: #f6f1ea;
   --color-surface-mint: #e7f8f1;
   --color-text: #172334;
+  --color-text-muted: #516172;
   --color-subtle: #5c6675;
   --color-outline: rgba(118, 136, 142, 0.28);
   --color-accent: #ef5d8d;
+  --color-accent-strong: #db4c7e;
   --color-accent-soft: #ffd5e2;
   --color-mint: #2aa697;
   --color-mint-soft: #d8f5ee;
@@ -32,34 +35,37 @@
 }
 
 :root[data-theme="beige"] {
-  --color-shell: #e7ddd1;
-  --color-surface: rgba(246, 239, 231, 0.98);
-  --color-surface-strong: #fdf7f0;
-  --color-surface-mint: #efe4d7;
-  --color-text: #3e3127;
-  --color-subtle: #78685b;
-  --color-outline: rgba(125, 106, 90, 0.2);
-  --color-accent: #7b5e4b;
-  --color-accent-soft: #e7d8ca;
-  --color-mint: #8b6b52;
-  --color-mint-soft: #efe1d3;
-  --color-danger: #9e7055;
-  --color-danger-soft: #f1e1d4;
-  --color-warning: #a8845d;
-  --color-warning-soft: #eadbc8;
-  --color-elevated: rgba(252, 246, 239, 0.96);
-  --color-completed: #e2d2c2;
-  --color-completed-text: #5d4637;
-  --color-important: #ead8c5;
-  --color-important-text: #5a4336;
+  --color-shell: #e6dccf;
+  --color-surface: rgba(244, 235, 224, 0.98);
+  --color-surface-strong: #fff8ef;
+  --color-surface-muted: #ede0cf;
+  --color-surface-mint: #ecddca;
+  --color-text: #31251e;
+  --color-text-muted: #635446;
+  --color-subtle: #7a695c;
+  --color-outline: rgba(114, 91, 73, 0.25);
+  --color-accent: #7b5b46;
+  --color-accent-strong: #624634;
+  --color-accent-soft: #ead7c2;
+  --color-mint: #8c6f54;
+  --color-mint-soft: #efe0cf;
+  --color-danger: #9f6f4a;
+  --color-danger-soft: #f1e0cd;
+  --color-warning: #ab8254;
+  --color-warning-soft: #f2e1c8;
+  --color-elevated: rgba(255, 248, 240, 0.98);
+  --color-completed: #dec8b2;
+  --color-completed-text: #4f3c2e;
+  --color-important: #f1dfcc;
+  --color-important-text: #573f30;
   --color-overlay: rgba(59, 43, 32, 0.22);
-  --hero-gradient: linear-gradient(160deg, #f8f2ea 0%, #f2e7da 52%, #ede0d2 100%);
-  --panel-gradient: linear-gradient(155deg, #f7f0e8 0%, #f1e6d8 45%, #ebdfd1 100%);
-  --catalog-gradient: linear-gradient(150deg, #f8f1e8 0%, #efe4d6 50%, #e8daca 100%);
-  --avatar-gradient: linear-gradient(160deg, #efe3d5, #dcc7b0);
-  --shadow-soft: 0 18px 45px rgba(95, 77, 62, 0.14);
-  --shadow-accent: 0 12px 28px rgba(123, 94, 75, 0.2);
-  --shadow-accent-strong: 0 14px 30px rgba(123, 94, 75, 0.22);
+  --hero-gradient: linear-gradient(165deg, #fbf4eb 0%, #f2e4d4 50%, #e8d7c5 100%);
+  --panel-gradient: linear-gradient(160deg, #fbf5ee 0%, #f0e2d1 46%, #e6d6c5 100%);
+  --catalog-gradient: linear-gradient(155deg, #f9f2e8 0%, #efe2d1 48%, #e4d2bf 100%);
+  --avatar-gradient: linear-gradient(160deg, #f1e3d4, #dcc4aa);
+  --shadow-soft: 0 18px 48px rgba(87, 67, 50, 0.16);
+  --shadow-accent: 0 14px 30px rgba(98, 70, 52, 0.22);
+  --shadow-accent-strong: 0 18px 34px rgba(98, 70, 52, 0.26);
 }
 
 @theme inline {
@@ -131,55 +137,65 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .theme-hero {
   background: var(--hero-gradient);
+  border: 1px solid color-mix(in srgb, var(--color-outline) 78%, transparent);
   box-shadow: var(--shadow-soft);
 }
 
 .theme-panel {
   background: var(--panel-gradient);
+  border: 1px solid color-mix(in srgb, var(--color-outline) 74%, transparent);
   box-shadow: var(--shadow-soft);
 }
 
 .theme-catalog {
   background: var(--catalog-gradient);
+  border: 1px solid color-mix(in srgb, var(--color-outline) 72%, transparent);
   box-shadow: var(--shadow-soft);
 }
 
 .theme-elevated {
   background: var(--color-elevated);
   border: 1px solid color-mix(in srgb, var(--color-outline) 80%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.46),
+    0 10px 24px color-mix(in srgb, var(--color-text) 6%, transparent);
 }
 
 .theme-subtle {
-  background: color-mix(in srgb, var(--color-surface-strong) 55%, var(--color-shell));
+  background: color-mix(in srgb, var(--color-surface-strong) 42%, var(--color-shell));
+  border: 1px solid color-mix(in srgb, var(--color-outline) 56%, transparent);
 }
 
 .theme-important {
   background: var(--color-important);
   color: var(--color-important-text);
-  border: 1px solid color-mix(in srgb, var(--color-accent) 24%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 28%, transparent);
   box-shadow: var(--shadow-accent);
 }
 
 .theme-completed {
   background: var(--color-completed);
   color: var(--color-completed-text);
-  border: 1px solid color-mix(in srgb, var(--color-accent) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 24%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .theme-status-positive {
   background: var(--color-mint-soft);
   color: var(--color-mint);
+  border: 1px solid color-mix(in srgb, var(--color-mint) 18%, transparent);
 }
 
 .theme-status-warning {
   background: var(--color-danger-soft);
   color: var(--color-danger);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 18%, transparent);
 }
 
 .theme-accent-button {
-  background: var(--color-accent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-accent) 90%, #fff 10%), var(--color-accent-strong));
   color: #fff;
-  box-shadow: var(--shadow-accent);
+  box-shadow: var(--shadow-accent-strong);
 }
 
 .theme-switcher-shell {
@@ -201,6 +217,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .theme-input {
   background: var(--color-elevated);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
 .theme-overlay {
@@ -374,15 +391,15 @@ html[data-theme="beige"] .bg-white\/55 {
 }
 
 html[data-theme="beige"] .bg-slate-100 {
-  background-color: #efe4d7 !important;
+  background-color: #ecdecd !important;
 }
 
 html[data-theme="beige"] .bg-slate-50 {
-  background-color: #f4ebdf !important;
+  background-color: #f7ede1 !important;
 }
 
 html[data-theme="beige"] .bg-slate-200 {
-  background-color: #d8c7b4 !important;
+  background-color: #d9c4ae !important;
 }
 
 html[data-theme="beige"] .border-white\/60 {
@@ -392,4 +409,58 @@ html[data-theme="beige"] .border-white\/60 {
 html[data-theme="beige"] .bg-slate-900\/30,
 html[data-theme="beige"] .bg-slate-900\/40 {
   background-color: var(--color-overlay) !important;
+}
+
+html[data-theme="beige"] .app-card {
+  background: linear-gradient(180deg, rgba(255, 248, 240, 0.98), rgba(246, 236, 224, 0.98));
+  border-color: color-mix(in srgb, var(--color-outline) 82%, transparent);
+}
+
+html[data-theme="beige"] .theme-elevated {
+  background: linear-gradient(180deg, rgba(255, 249, 242, 0.98), rgba(249, 239, 228, 0.98));
+}
+
+html[data-theme="beige"] .theme-important {
+  background: linear-gradient(180deg, #f2e2d0, #ead6c0);
+  color: var(--color-important-text);
+}
+
+html[data-theme="beige"] .theme-completed {
+  background: linear-gradient(180deg, #e5d1bc, #dcc5ae);
+  color: var(--color-completed-text);
+}
+
+html[data-theme="beige"] .theme-status-positive {
+  background: linear-gradient(180deg, #efdfce, #e5d2be);
+  color: #5b4333;
+}
+
+html[data-theme="beige"] .theme-status-warning {
+  background: linear-gradient(180deg, #f1dfce, #e8d0bb);
+  color: #744e34;
+}
+
+html[data-theme="beige"] .theme-nav {
+  background: linear-gradient(180deg, rgba(255, 249, 242, 0.96), rgba(245, 234, 220, 0.94));
+  border-color: color-mix(in srgb, var(--color-outline) 88%, transparent);
+}
+
+html[data-theme="beige"] .theme-switcher-shell {
+  background: linear-gradient(180deg, rgba(255, 250, 244, 0.96), rgba(241, 229, 216, 0.96));
+  border-color: color-mix(in srgb, var(--color-outline) 88%, transparent);
+}
+
+html[data-theme="beige"] .theme-switcher-tab-active {
+  background: linear-gradient(180deg, #7f5f49, #5d4433);
+}
+
+html[data-theme="beige"] .theme-accent-button {
+  background: linear-gradient(180deg, #84634d, #5f4635);
+}
+
+html[data-theme="beige"] .theme-input,
+html[data-theme="beige"] input,
+html[data-theme="beige"] textarea,
+html[data-theme="beige"] select {
+  border-color: color-mix(in srgb, var(--color-outline) 95%, transparent);
 }
