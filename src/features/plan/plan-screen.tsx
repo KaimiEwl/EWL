@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { EmptyState } from "@/components/empty-state";
-import { DayAiAssistantCard } from "@/components/day-ai-assistant-card";
 import { MealSection } from "@/components/meal-section";
 import { MicronutrientBalanceCard } from "@/components/micronutrient-balance-card";
 import { NutrientTopUpCard } from "@/components/nutrient-top-up-card";
 import { ProductSearchSheet } from "@/components/product-search-sheet";
+import { buildDayTopUpQuestion, formatDayAiContext, getMissingDayNutrients } from "@/lib/ai/day-context";
+import { launchAiHelper } from "@/lib/ai/helper-launch";
 import { formatFullDate, getTodayDate } from "@/lib/date";
 import {
   getActiveProducts,
@@ -71,6 +72,11 @@ export function PlanScreen({ initialDateParam }: { initialDateParam?: string }) 
     dinnerSection?.rows.length || currentDate < getTodayDate()
       ? getEasyDayTopUpSuggestions(summary, activeProducts, user)
       : null;
+  const missingDayNutrients = getMissingDayNutrients(summary, 4);
+  const shouldOfferAiTopUp =
+    summary.items.length > 0 &&
+    missingDayNutrients.length > 0 &&
+    (Boolean(dinnerSection?.rows.length) || currentDate < getTodayDate() || (summary.balance?.kcal ?? 0) <= 250);
 
   const openMealSheet = (mealType: MealType, mealLabel = "") => {
     setSheetMealType(mealType);
@@ -136,15 +142,41 @@ export function PlanScreen({ initialDateParam }: { initialDateParam?: string }) 
         actual={summary.totals}
       />
 
+      {shouldOfferAiTopUp ? (
+        <section className="app-card rounded-[2rem] p-5">
+          <h2 className="text-lg font-semibold text-slate-900">Закрыть нутриенты</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Если день уже почти закрыт, AI подскажет, чем аккуратно добрать недостающее без лишнего шума.
+          </p>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {missingDayNutrients.map((item) => (
+              <span key={item} className="theme-important rounded-full px-3 py-2 text-xs font-semibold text-slate-700">
+                {item}
+              </span>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() =>
+              launchAiHelper({
+                tab: "chat",
+                question: buildDayTopUpQuestion(summary),
+                dayContext: formatDayAiContext(summary),
+                autoAsk: true,
+              })
+            }
+            className="theme-accent-button mt-4 rounded-[1rem] px-5 py-3 text-sm font-semibold"
+          >
+            Спросить AI чем закрыть нутриенты
+          </button>
+        </section>
+      ) : null}
+
       {topUpSuggestion ? (
         <NutrientTopUpCard title="День почти закрыт" deficits={topUpSuggestion.deficits} products={topUpSuggestion.products} />
       ) : null}
-
-      <DayAiAssistantCard
-        summary={summary}
-        currentPath="/plan"
-        dinnerClosed={Boolean(dinnerSection?.rows.length)}
-      />
 
       <section className="app-card rounded-[2rem] p-5">
         <h2 className="text-lg font-semibold text-slate-900">Добавить свой прием пищи</h2>

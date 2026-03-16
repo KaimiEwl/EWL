@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { AiHelperSheet } from "@/components/ai-helper-sheet";
+import { subscribeAiHelperLaunch, type AiHelperLaunchPayload } from "@/lib/ai/helper-launch";
 import { getUnlockedAchievements } from "@/lib/companion/achievements";
 import {
   getAchievementMessage,
@@ -196,6 +197,7 @@ export function CottageCheeseHelper() {
   const initializedBubbleTokenRef = useRef(false);
   const [visibleBubbleToken, setVisibleBubbleToken] = useState<string | null>(null);
   const [helperOpen, setHelperOpen] = useState(false);
+  const [launchRequest, setLaunchRequest] = useState<(AiHelperLaunchPayload & { id: string }) | null>(null);
 
   const user = getSelectedUser(state);
   const currentDate = useMemo(() => {
@@ -368,6 +370,17 @@ export function CottageCheeseHelper() {
     ? { key: storedMessage.key, text: storedMessage.text, mood: storedMessage.mood } satisfies CompanionMessage
     : null;
 
+  useEffect(() => {
+    return subscribeAiHelperLaunch((payload) => {
+      setLaunchRequest({
+        ...payload,
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      });
+      setVisibleBubbleToken(null);
+      setHelperOpen(true);
+    });
+  }, []);
+
   return (
     <>
     <div className="fixed bottom-[calc(5.15rem+env(safe-area-inset-bottom))] right-3 z-30 flex flex-col items-end">
@@ -409,6 +422,7 @@ export function CottageCheeseHelper() {
         open={helperOpen}
         currentPath={pathname}
         onClose={() => setHelperOpen(false)}
+        launchRequest={launchRequest}
         onCreateProduct={(draft) => {
           createProduct(draft);
           setHelperOpen(false);

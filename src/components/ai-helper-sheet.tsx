@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { askAiHelper, type ProductAiSuggestion } from "@/lib/ai/deepseek";
 import { productSuggestionToDraft } from "@/lib/ai/product-draft";
+import type { AiHelperLaunchPayload } from "@/lib/ai/helper-launch";
 import { loadLocalDeepSeekApiKey, saveLocalDeepSeekApiKey } from "@/lib/ai/storage";
 import type { ProductDraft } from "@/lib/types";
 
@@ -16,11 +17,13 @@ export function AiHelperSheet({
   currentPath,
   onClose,
   onCreateProduct,
+  launchRequest,
 }: {
   open: boolean;
   currentPath: string;
   onClose: () => void;
   onCreateProduct: (draft: ProductDraft) => void;
+  launchRequest?: (AiHelperLaunchPayload & { id: string }) | null;
 }) {
   const [tab, setTab] = useState<HelperTab>("product");
   const [apiKey, setApiKey] = useState("");
@@ -33,6 +36,7 @@ export function AiHelperSheet({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const hydratedKeyRef = useRef(false);
+  const handledLaunchIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!open) {
@@ -51,12 +55,98 @@ export function AiHelperSheet({
     saveLocalDeepSeekApiKey(apiKey);
   }, [apiKey]);
 
+  const canAskProduct = Boolean(apiKey.trim() && productName.trim());
+  const canAskChat = Boolean(apiKey.trim() && chatQuestion.trim());
+
+  const submitProductRequest = useCallback(async () => {
+    setSubmitting(true);
+    setError("");
+    setProductAnswer("");
+    setProductSuggestion(null);
+
+    try {
+      const result = await askAiHelper({
+        apiKey,
+        mode: "product",
+        currentPath,
+        question: "Подбери нутриенты для создания продукта в приложении.",
+        productName,
+        productContext,
+      });
+
+      if (result.mode === "product") {
+        setProductAnswer(result.answer);
+        setProductSuggestion(result.product);
+      }
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Не удалось спросить AI.");
+    } finally {
+      setSubmitting(false);
+    }
+  }, [apiKey, currentPath, productContext, productName]);
+
+  const submitChatRequest = useCallback(
+    async (questionOverride?: string, dayContextOverride?: string) => {
+      const prompt = (questionOverride ?? chatQuestion).trim();
+      if (!prompt || !apiKey.trim()) {
+        return;
+      }
+
+      setSubmitting(true);
+      setError("");
+      setChatAnswer("");
+
+      try {
+        const result = await askAiHelper({
+          apiKey,
+          mode: "chat",
+          currentPath,
+          question: prompt,
+          dayContext: dayContextOverride,
+        });
+
+        if (result.mode === "chat") {
+          setChatAnswer(result.answer);
+        }
+      } catch (requestError) {
+        setError(requestError instanceof Error ? requestError.message : "Не удалось спросить AI.");
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [apiKey, chatQuestion, currentPath],
+  );
+
+  useEffect(() => {
+    if (!open || !launchRequest || handledLaunchIdRef.current === launchRequest.id) {
+      return;
+    }
+
+    handledLaunchIdRef.current = launchRequest.id;
+
+    if (launchRequest.tab === "chat") {
+      setTab("chat");
+      setError("");
+      setChatAnswer("");
+      setProductAnswer("");
+      setProductSuggestion(null);
+      setChatQuestion(launchRequest.question ?? "");
+
+      if (launchRequest.autoAsk && apiKey.trim() && launchRequest.question?.trim()) {
+        void submitChatRequest(launchRequest.question, launchRequest.dayContext);
+      }
+      return;
+    }
+
+    if (launchRequest.tab === "product") {
+      setTab("product");
+      setError("");
+    }
+  }, [apiKey, launchRequest, open, submitChatRequest]);
+
   if (!open) {
     return null;
   }
-
-  const canAskProduct = Boolean(apiKey.trim() && productName.trim());
-  const canAskChat = Boolean(apiKey.trim() && chatQuestion.trim());
 
   return (
     <div className="theme-overlay fixed inset-0 z-[80] flex items-end p-3">
@@ -204,32 +294,7 @@ export function AiHelperSheet({
             <div className="mt-5 flex items-center justify-end gap-3">
               <button
                 type="button"
-                onClick={async () => {
-                  setSubmitting(true);
-                  setError("");
-                  setProductAnswer("");
-                  setProductSuggestion(null);
-
-                  try {
-                    const result = await askAiHelper({
-                      apiKey,
-                      mode: "product",
-                      currentPath,
-                      question: "Подбери нутриенты для создания продукта в приложении.",
-                      productName,
-                      productContext,
-                    });
-
-                    if (result.mode === "product") {
-                      setProductAnswer(result.answer);
-                      setProductSuggestion(result.product);
-                    }
-                  } catch (requestError) {
-                    setError(requestError instanceof Error ? requestError.message : "Не удалось спросить AI.");
-                  } finally {
-                    setSubmitting(false);
-                  }
-                }}
+                onClick={() => void submitProductRequest()}
                 disabled={submitting || !canAskProduct}
                 className="theme-accent-button rounded-[1rem] px-5 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-45"
               >
@@ -265,28 +330,7 @@ export function AiHelperSheet({
             <div className="mt-5 flex items-center justify-end gap-3">
               <button
                 type="button"
-                onClick={async () => {
-                  setSubmitting(true);
-                  setError("");
-                  setChatAnswer("");
-
-                  try {
-                    const result = await askAiHelper({
-                      apiKey,
-                      mode: "chat",
-                      currentPath,
-                      question: chatQuestion,
-                    });
-
-                    if (result.mode === "chat") {
-                      setChatAnswer(result.answer);
-                    }
-                  } catch (requestError) {
-                    setError(requestError instanceof Error ? requestError.message : "Не удалось спросить AI.");
-                  } finally {
-                    setSubmitting(false);
-                  }
-                }}
+                onClick={() => void submitChatRequest()}
                 disabled={submitting || !canAskChat}
                 className="theme-accent-button rounded-[1rem] px-5 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-45"
               >

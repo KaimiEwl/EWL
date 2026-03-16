@@ -248,7 +248,7 @@ export async function askAiHelper({
       },
       {
         role: "user",
-        content: `Текущий экран: ${currentPath}. Вопрос пользователя: ${question}`,
+        content: `Текущий экран: ${currentPath}. ${dayContext ? `Контекст дня: ${dayContext}. ` : ""}Вопрос пользователя: ${question}`,
       },
     ]);
 
