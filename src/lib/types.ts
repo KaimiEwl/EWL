@@ -25,6 +25,12 @@ export interface UserProfile {
   proteinPerKg: number;
   fatPerKg: number;
   carbsPerKg: number;
+  fiberTarget?: number | null;
+  magnesiumTarget?: number | null;
+  ironTarget?: number | null;
+  zincTarget?: number | null;
+  omega3Target?: number | null;
+  vitaminB12Target?: number | null;
   createdAt: string;
   updatedAt: string;
 }

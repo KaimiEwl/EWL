@@ -59,6 +59,12 @@ function migrateState(state: PersistedAppState): PersistedAppState {
       activityLevel: normalizeActivityLevel(profile.activityLevel),
       heightCm: profile.heightCm ?? null,
       goalWeightKg: profile.goalWeightKg ?? profile.weightKg,
+      fiberTarget: profile.fiberTarget ?? null,
+      magnesiumTarget: profile.magnesiumTarget ?? null,
+      ironTarget: profile.ironTarget ?? null,
+      zincTarget: profile.zincTarget ?? null,
+      omega3Target: profile.omega3Target ?? null,
+      vitaminB12Target: profile.vitaminB12Target ?? null,
     })),
   };
 }

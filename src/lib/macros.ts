@@ -160,12 +160,37 @@ export function calculateTargets(profile: UserProfile): NutritionTotals {
     carbs = roundMacro(Math.max(0, (kcal - (protein * 4 + fat * 9)) / 4));
   }
 
+  const defaultMicros = calculateMicronutrientTargets(profile, kcal);
+
   return {
     protein,
     fat,
     carbs,
     kcal,
-    ...calculateMicronutrientTargets(profile, kcal),
+    fiber:
+      mode === "custom" && typeof profile.fiberTarget === "number"
+        ? roundMacro(profile.fiberTarget)
+        : defaultMicros.fiber,
+    magnesium:
+      mode === "custom" && typeof profile.magnesiumTarget === "number"
+        ? roundMacro(profile.magnesiumTarget)
+        : defaultMicros.magnesium,
+    iron:
+      mode === "custom" && typeof profile.ironTarget === "number"
+        ? roundMacro(profile.ironTarget)
+        : defaultMicros.iron,
+    zinc:
+      mode === "custom" && typeof profile.zincTarget === "number"
+        ? roundMacro(profile.zincTarget)
+        : defaultMicros.zinc,
+    omega3:
+      mode === "custom" && typeof profile.omega3Target === "number"
+        ? roundMacro(profile.omega3Target)
+        : defaultMicros.omega3,
+    vitaminB12:
+      mode === "custom" && typeof profile.vitaminB12Target === "number"
+        ? roundMacro(profile.vitaminB12Target)
+        : defaultMicros.vitaminB12,
   };
 }
 

@@ -36,6 +36,12 @@ type ProfileInput = Pick<
   | "proteinPerKg"
   | "fatPerKg"
   | "carbsPerKg"
+  | "fiberTarget"
+  | "magnesiumTarget"
+  | "ironTarget"
+  | "zincTarget"
+  | "omega3Target"
+  | "vitaminB12Target"
 >;
 
 type Action =
@@ -124,6 +130,12 @@ function normalizeState(payload: PersistedAppState): PersistedAppState {
       activityLevel: normalizeActivityLevel(profile.activityLevel),
       heightCm: profile.heightCm ?? null,
       goalWeightKg: profile.goalWeightKg ?? profile.weightKg,
+      fiberTarget: profile.fiberTarget ?? null,
+      magnesiumTarget: profile.magnesiumTarget ?? null,
+      ironTarget: profile.ironTarget ?? null,
+      zincTarget: profile.zincTarget ?? null,
+      omega3Target: profile.omega3Target ?? null,
+      vitaminB12Target: profile.vitaminB12Target ?? null,
     })),
     products: payload.products.map((product) => ({
       ...product,
@@ -338,6 +350,12 @@ function reducer(state: HydratedState, action: Action): HydratedState {
                 ...action.payload.changes,
                 age: action.payload.changes.age ?? profile.age ?? 30,
                 activityLevel: normalizeActivityLevel(action.payload.changes.activityLevel ?? profile.activityLevel),
+                fiberTarget: action.payload.changes.fiberTarget ?? profile.fiberTarget ?? null,
+                magnesiumTarget: action.payload.changes.magnesiumTarget ?? profile.magnesiumTarget ?? null,
+                ironTarget: action.payload.changes.ironTarget ?? profile.ironTarget ?? null,
+                zincTarget: action.payload.changes.zincTarget ?? profile.zincTarget ?? null,
+                omega3Target: action.payload.changes.omega3Target ?? profile.omega3Target ?? null,
+                vitaminB12Target: action.payload.changes.vitaminB12Target ?? profile.vitaminB12Target ?? null,
                 updatedAt: new Date().toISOString(),
               }
             : profile,
