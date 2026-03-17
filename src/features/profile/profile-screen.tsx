@@ -1,22 +1,50 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState } from "react";
 import { UserSwitcher } from "@/components/user-switcher";
 import { FORMULA_PRESETS } from "@/lib/constants";
 import { calculateTargets, resolveProfileFormula } from "@/lib/macros";
 import { getSelectedUser } from "@/lib/selectors";
-import { buildTransferState, decodeTransferKey, downloadStateBackup, encodeTransferKey } from "@/lib/transfer";
-import type { ActivityLevel, FormulaMode, PersistedAppState } from "@/lib/types";
-import { activityLabel, formulaLabel, sanitizeNumber, useAppStore } from "@/store/app-store";
+import {
+  buildTransferState,
+  decodeTransferKey,
+  downloadStateBackup,
+  encodeTransferKey,
+} from "@/lib/transfer";
+import type {
+  ActivityLevel,
+  FormulaMode,
+  NutritionTotals,
+  PersistedAppState,
+  UserProfile,
+} from "@/lib/types";
+import { sanitizeNumber, useAppStore } from "@/store/app-store";
 
 const inputClass =
-  "mt-2 h-12 w-full rounded-[1rem] border border-[var(--color-outline)] bg-white px-4 text-[15px] outline-none";
+  "mt-2 h-12 w-full rounded-[1rem] border border-[var(--color-outline)] bg-white px-4 text-[15px] text-slate-900 outline-none";
+
+const textAreaClass =
+  "theme-input mt-3 min-h-28 w-full rounded-[1.2rem] border border-[var(--color-outline)] px-4 py-3 text-[15px] outline-none";
+
+const formulaTitles: Record<FormulaMode, string> = {
+  lose: "Похудение",
+  maintain: "Поддержание",
+  gain: "Набор массы",
+  custom: "Своя",
+};
 
 const formulaDescriptions: Record<FormulaMode, string> = {
-  lose: "?????? ??????? ?? ????????-??? ?????: TDEE - 15%.",
-  maintain: "??????????? ?? ????????-??? ????? ??? ????????.",
-  gain: "????????? ???????? ?? ????????-??? ?????: TDEE + 10%.",
-  custom: "???? ???????: ?/?/? ? ????????? ???????? ???????.",
+  lose: "Мягкий дефицит по формуле Миффлина - Сан Жеора: TDEE - 15%.",
+  maintain: "Комфортное удержание веса без лишнего дефицита.",
+  gain: "Спокойный профицит для набора: TDEE + 10%.",
+  custom: "Своя формула: Б/Ж/У и нутриенты на день задаете вручную.",
+};
+
+const activityTitles: Record<ActivityLevel, string> = {
+  sedentary: "Сидячий образ жизни",
+  light: "Легкая активность",
+  moderate: "Средняя активность",
+  high: "Высокая активность",
 };
 
 type ProfileDraft = {
@@ -39,6 +67,19 @@ type ProfileDraft = {
   vitaminB12Target: string;
 };
 
+type FormulaFieldKey =
+  | "proteinPerKg"
+  | "fatPerKg"
+  | "carbsPerKg"
+  | "fiberTarget"
+  | "magnesiumTarget"
+  | "ironTarget"
+  | "zincTarget"
+  | "omega3Target"
+  | "vitaminB12Target";
+
+type FormulaValues = Pick<ProfileDraft, FormulaFieldKey>;
+
 const emptyDraft: ProfileDraft = {
   name: "",
   sex: "female",
@@ -51,18 +92,18 @@ const emptyDraft: ProfileDraft = {
   proteinPerKg: String(FORMULA_PRESETS.maintain.proteinPerKg),
   fatPerKg: String(FORMULA_PRESETS.maintain.fatPerKg),
   carbsPerKg: "0",
-  fiberTarget: "28",
-  magnesiumTarget: "310",
-  ironTarget: "18",
-  zincTarget: "8",
-  omega3Target: "1.1",
-  vitaminB12Target: "2.4",
+  fiberTarget: "",
+  magnesiumTarget: "",
+  ironTarget: "",
+  zincTarget: "",
+  omega3Target: "",
+  vitaminB12Target: "",
 };
 
-function buildDraftPreview(draft: ProfileDraft) {
-  return calculateTargets({
+function getPreviewProfile(draft: ProfileDraft): UserProfile {
+  return {
     id: "preview",
-    name: draft.name || "????? ???????",
+    name: draft.name || "Новый профиль",
     sex: draft.sex,
     age: sanitizeNumber(draft.age, 30),
     activityLevel: draft.activityLevel,
@@ -73,15 +114,84 @@ function buildDraftPreview(draft: ProfileDraft) {
     proteinPerKg: sanitizeNumber(draft.proteinPerKg, FORMULA_PRESETS.maintain.proteinPerKg),
     fatPerKg: sanitizeNumber(draft.fatPerKg, FORMULA_PRESETS.maintain.fatPerKg),
     carbsPerKg: sanitizeNumber(draft.carbsPerKg, 0),
-    fiberTarget: sanitizeNumber(draft.fiberTarget, 0),
-    magnesiumTarget: sanitizeNumber(draft.magnesiumTarget, 0),
-    ironTarget: sanitizeNumber(draft.ironTarget, 0),
-    zincTarget: sanitizeNumber(draft.zincTarget, 0),
-    omega3Target: sanitizeNumber(draft.omega3Target, 0),
-    vitaminB12Target: sanitizeNumber(draft.vitaminB12Target, 0),
+    fiberTarget: draft.fiberTarget.trim() ? sanitizeNumber(draft.fiberTarget, 0) : null,
+    magnesiumTarget: draft.magnesiumTarget.trim() ? sanitizeNumber(draft.magnesiumTarget, 0) : null,
+    ironTarget: draft.ironTarget.trim() ? sanitizeNumber(draft.ironTarget, 0) : null,
+    zincTarget: draft.zincTarget.trim() ? sanitizeNumber(draft.zincTarget, 0) : null,
+    omega3Target: draft.omega3Target.trim() ? sanitizeNumber(draft.omega3Target, 0) : null,
+    vitaminB12Target: draft.vitaminB12Target.trim() ? sanitizeNumber(draft.vitaminB12Target, 0) : null,
     createdAt: "",
     updatedAt: "",
-  });
+  };
+}
+
+function buildDraftPreview(draft: ProfileDraft) {
+  return calculateTargets(getPreviewProfile(draft));
+}
+
+function getDraftFormulaValues(draft: ProfileDraft): FormulaValues {
+  return {
+    proteinPerKg: draft.proteinPerKg,
+    fatPerKg: draft.fatPerKg,
+    carbsPerKg: draft.carbsPerKg,
+    fiberTarget: draft.fiberTarget,
+    magnesiumTarget: draft.magnesiumTarget,
+    ironTarget: draft.ironTarget,
+    zincTarget: draft.zincTarget,
+    omega3Target: draft.omega3Target,
+    vitaminB12Target: draft.vitaminB12Target,
+  };
+}
+
+function getProfileFormulaValues(user: UserProfile): FormulaValues {
+  return {
+    proteinPerKg: String(user.proteinPerKg),
+    fatPerKg: String(user.fatPerKg),
+    carbsPerKg: String(user.carbsPerKg),
+    fiberTarget: user.fiberTarget == null ? "" : String(user.fiberTarget),
+    magnesiumTarget: user.magnesiumTarget == null ? "" : String(user.magnesiumTarget),
+    ironTarget: user.ironTarget == null ? "" : String(user.ironTarget),
+    zincTarget: user.zincTarget == null ? "" : String(user.zincTarget),
+    omega3Target: user.omega3Target == null ? "" : String(user.omega3Target),
+    vitaminB12Target: user.vitaminB12Target == null ? "" : String(user.vitaminB12Target),
+  };
+}
+
+function ensureCustomFormulaFields(values: FormulaValues, fallback: NutritionTotals): FormulaValues {
+  return {
+    proteinPerKg: values.proteinPerKg || String(FORMULA_PRESETS.maintain.proteinPerKg),
+    fatPerKg: values.fatPerKg || String(FORMULA_PRESETS.maintain.fatPerKg),
+    carbsPerKg: values.carbsPerKg || "0",
+    fiberTarget: values.fiberTarget || String(fallback.fiber),
+    magnesiumTarget: values.magnesiumTarget || String(fallback.magnesium),
+    ironTarget: values.ironTarget || String(fallback.iron),
+    zincTarget: values.zincTarget || String(fallback.zinc),
+    omega3Target: values.omega3Target || String(fallback.omega3),
+    vitaminB12Target: values.vitaminB12Target || String(fallback.vitaminB12),
+  };
+}
+
+function applyDraftMode(nextMode: FormulaMode, draft: ProfileDraft): ProfileDraft {
+  if (nextMode !== "custom") {
+    const preset = FORMULA_PRESETS[nextMode];
+    return {
+      ...draft,
+      formulaMode: nextMode,
+      proteinPerKg: String(preset.proteinPerKg),
+      fatPerKg: String(preset.fatPerKg),
+    };
+  }
+
+  const fallback = buildDraftPreview({ ...draft, formulaMode: "maintain" });
+  return {
+    ...draft,
+    formulaMode: nextMode,
+    ...ensureCustomFormulaFields(getDraftFormulaValues(draft), fallback),
+  };
+}
+
+function getNumberOrNull(value: string) {
+  return value.trim() ? sanitizeNumber(value, 0) : null;
 }
 
 function isDraftValid(draft: ProfileDraft) {
@@ -90,10 +200,7 @@ function isDraftValid(draft: ProfileDraft) {
     sanitizeNumber(draft.age, 30) >= 14 &&
     sanitizeNumber(draft.heightCm, 0) > 0 &&
     sanitizeNumber(draft.weightKg, 0) > 0 &&
-    sanitizeNumber(draft.goalWeightKg, 0) > 0 &&
-    sanitizeNumber(draft.proteinPerKg, 0) > 0 &&
-    sanitizeNumber(draft.fatPerKg, 0) > 0 &&
-    sanitizeNumber(draft.carbsPerKg, 0) >= 0;
+    sanitizeNumber(draft.goalWeightKg, 0) > 0;
 
   if (!commonOk) {
     return false;
@@ -104,12 +211,31 @@ function isDraftValid(draft: ProfileDraft) {
   }
 
   return (
+    sanitizeNumber(draft.proteinPerKg, 0) > 0 &&
+    sanitizeNumber(draft.fatPerKg, 0) > 0 &&
+    sanitizeNumber(draft.carbsPerKg, 0) >= 0 &&
     sanitizeNumber(draft.fiberTarget, 0) > 0 &&
     sanitizeNumber(draft.magnesiumTarget, 0) > 0 &&
     sanitizeNumber(draft.ironTarget, 0) > 0 &&
     sanitizeNumber(draft.zincTarget, 0) > 0 &&
     sanitizeNumber(draft.omega3Target, 0) > 0 &&
     sanitizeNumber(draft.vitaminB12Target, 0) > 0
+  );
+}
+
+function SummaryPreview({ preview }: { preview: NutritionTotals }) {
+  return (
+    <div className="rounded-[1.2rem] bg-slate-50 px-4 py-3 text-sm text-slate-600">
+      <div className="font-semibold text-slate-900">Предпросмотр цели</div>
+      <div className="mt-2 text-lg font-semibold text-slate-900">{preview.kcal} ккал</div>
+      <div className="mt-1">Б {preview.protein} • Ж {preview.fat} • У {preview.carbs}</div>
+      <div className="mt-2 text-xs text-slate-500">
+        Клетчатка {preview.fiber} г • Магний {preview.magnesium} мг • Железо {preview.iron} мг
+      </div>
+      <div className="mt-1 text-xs text-slate-500">
+        Цинк {preview.zinc} мг • Омега-3 {preview.omega3} г • B12 {preview.vitaminB12} мкг
+      </div>
+    </div>
   );
 }
 
@@ -124,7 +250,7 @@ function FormulaModeSwitch({
 
   return (
     <div>
-      <div className="text-sm font-medium text-slate-600">???????</div>
+      <div className="text-sm font-medium text-slate-600">Формула</div>
       <div className="mt-2 grid grid-cols-2 gap-2">
         {options.map((mode) => (
           <button
@@ -135,7 +261,7 @@ function FormulaModeSwitch({
               value === mode ? "bg-[var(--color-accent)] text-white" : "bg-slate-100 text-slate-700"
             }`}
           >
-            <div className="font-semibold">{formulaLabel(mode)}</div>
+            <div className="font-semibold">{formulaTitles[mode]}</div>
             <div className={`mt-1 text-xs leading-5 ${value === mode ? "text-white/80" : "text-slate-500"}`}>
               {formulaDescriptions[mode]}
             </div>
@@ -157,11 +283,11 @@ function ActivityInput({
 
   return (
     <label className="text-sm font-medium text-slate-600">
-      ??????????
+      Активность
       <select className={inputClass} value={value} onChange={(event) => onChange(event.target.value as ActivityLevel)}>
         {options.map((option) => (
           <option key={option} value={option}>
-            {activityLabel(option)}
+            {activityTitles[option]}
           </option>
         ))}
       </select>
@@ -175,90 +301,132 @@ function FormulaInputs({
   onChange,
 }: {
   mode: FormulaMode;
-  values: Pick<
-    ProfileDraft,
-    | "proteinPerKg"
-    | "fatPerKg"
-    | "carbsPerKg"
-    | "fiberTarget"
-    | "magnesiumTarget"
-    | "ironTarget"
-    | "zincTarget"
-    | "omega3Target"
-    | "vitaminB12Target"
-  >;
-  onChange: (
-    value: Partial<
-      Pick<
-        ProfileDraft,
-        | "proteinPerKg"
-        | "fatPerKg"
-        | "carbsPerKg"
-        | "fiberTarget"
-        | "magnesiumTarget"
-        | "ironTarget"
-        | "zincTarget"
-        | "omega3Target"
-        | "vitaminB12Target"
-      >
-    >,
-  ) => void;
+  values: FormulaValues;
+  onChange: (value: Partial<FormulaValues>) => void;
 }) {
   if (mode !== "custom") {
     const preset = FORMULA_PRESETS[mode];
 
     return (
       <div className="rounded-[1.25rem] bg-slate-50 px-4 py-4 text-sm text-slate-600">
-        <div className="font-semibold text-slate-900">{formulaLabel(mode)}</div>
+        <div className="font-semibold text-slate-900">{formulaTitles[mode]}</div>
         <div className="mt-1">{formulaDescriptions[mode]}</div>
-        <div className="mt-2">? {preset.proteinPerKg} / ? {preset.fatPerKg} ?? ?? • ? ???? ?? ?????????? ????????</div>
+        <div className="mt-2">
+          Б {preset.proteinPerKg} / Ж {preset.fatPerKg} на кг • У считаются по оставшимся калориям
+        </div>
       </div>
     );
   }
 
   return (
     <div className="grid gap-4">
-      <div className="grid grid-cols-3 gap-3">
-        <label className="text-sm font-medium text-slate-600">
-          ? / ??
-          <input className={inputClass} type="number" min="0.1" step="0.1" value={values.proteinPerKg} onChange={(event) => onChange({ proteinPerKg: event.target.value })} />
-        </label>
-        <label className="text-sm font-medium text-slate-600">
-          ? / ??
-          <input className={inputClass} type="number" min="0.1" step="0.1" value={values.fatPerKg} onChange={(event) => onChange({ fatPerKg: event.target.value })} />
-        </label>
-        <label className="text-sm font-medium text-slate-600">
-          ? / ??
-          <input className={inputClass} type="number" min="0" step="0.1" value={values.carbsPerKg} onChange={(event) => onChange({ carbsPerKg: event.target.value })} />
-        </label>
+      <div className="rounded-[1.25rem] bg-slate-50 px-4 py-4">
+        <div className="text-sm font-semibold text-slate-900">Свои Б/Ж/У на кг</div>
+        <div className="mt-3 grid grid-cols-3 gap-3">
+          <label className="text-sm font-medium text-slate-600">
+            Б / кг
+            <input
+              className={inputClass}
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={values.proteinPerKg}
+              onChange={(event) => onChange({ proteinPerKg: event.target.value })}
+            />
+          </label>
+          <label className="text-sm font-medium text-slate-600">
+            Ж / кг
+            <input
+              className={inputClass}
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={values.fatPerKg}
+              onChange={(event) => onChange({ fatPerKg: event.target.value })}
+            />
+          </label>
+          <label className="text-sm font-medium text-slate-600">
+            У / кг
+            <input
+              className={inputClass}
+              type="number"
+              min="0"
+              step="0.1"
+              value={values.carbsPerKg}
+              onChange={(event) => onChange({ carbsPerKg: event.target.value })}
+            />
+          </label>
+        </div>
       </div>
 
       <div className="rounded-[1.25rem] bg-slate-50 px-4 py-4">
-        <div className="text-sm font-semibold text-slate-900">???? ????????? ?? ????</div>
+        <div className="text-sm font-semibold text-slate-900">Свои нутриенты на день</div>
         <div className="mt-3 grid grid-cols-2 gap-3">
           <label className="text-sm font-medium text-slate-600">
-            ?????????, ?
-            <input className={inputClass} type="number" min="0.1" step="0.1" value={values.fiberTarget} onChange={(event) => onChange({ fiberTarget: event.target.value })} />
+            Клетчатка, г
+            <input
+              className={inputClass}
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={values.fiberTarget}
+              onChange={(event) => onChange({ fiberTarget: event.target.value })}
+            />
           </label>
           <label className="text-sm font-medium text-slate-600">
-            ??????, ??
-            <input className={inputClass} type="number" min="0.1" step="0.1" value={values.magnesiumTarget} onChange={(event) => onChange({ magnesiumTarget: event.target.value })} />
+            Магний, мг
+            <input
+              className={inputClass}
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={values.magnesiumTarget}
+              onChange={(event) => onChange({ magnesiumTarget: event.target.value })}
+            />
           </label>
           <label className="text-sm font-medium text-slate-600">
-            ??????, ??
-            <input className={inputClass} type="number" min="0.1" step="0.1" value={values.ironTarget} onChange={(event) => onChange({ ironTarget: event.target.value })} />
+            Железо, мг
+            <input
+              className={inputClass}
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={values.ironTarget}
+              onChange={(event) => onChange({ ironTarget: event.target.value })}
+            />
           </label>
           <label className="text-sm font-medium text-slate-600">
-            ????, ??
-            <input className={inputClass} type="number" min="0.1" step="0.1" value={values.zincTarget} onChange={(event) => onChange({ zincTarget: event.target.value })} />
+            Цинк, мг
+            <input
+              className={inputClass}
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={values.zincTarget}
+              onChange={(event) => onChange({ zincTarget: event.target.value })}
+            />
           </label>
           <label className="text-sm font-medium text-slate-600">
-            ?????-3, ?
-            <input className={inputClass} type="number" min="0.1" step="0.1" value={values.omega3Target} onChange={(event) => onChange({ omega3Target: event.target.value })} />
+            Омега-3, г
+            <input
+              className={inputClass}
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={values.omega3Target}
+              onChange={(event) => onChange({ omega3Target: event.target.value })}
+            />
           </label>
           <label className="text-sm font-medium text-slate-600">
-            B12, ???
-            <input className={inputClass} type="number" min="0.1" step="0.1" value={values.vitaminB12Target} onChange={(event) => onChange({ vitaminB12Target: event.target.value })} />
+            Витамин B12, мкг
+            <input
+              className={inputClass}
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={values.vitaminB12Target}
+              onChange={(event) => onChange({ vitaminB12Target: event.target.value })}
+            />
           </label>
         </div>
       </div>
@@ -276,7 +444,7 @@ function ProfileForm({
 }: {
   draft: ProfileDraft;
   onChange: (draft: ProfileDraft) => void;
-  preview: ReturnType<typeof calculateTargets>;
+  preview: NutritionTotals;
   valid: boolean;
   onSubmit: () => void;
   onCancel?: () => void;
@@ -284,74 +452,108 @@ function ProfileForm({
   return (
     <div className="grid gap-4">
       <label className="text-sm font-medium text-slate-600">
-        ???
-        <input className={inputClass} value={draft.name} onChange={(event) => onChange({ ...draft, name: event.target.value })} placeholder="??????? ???" />
+        Имя
+        <input
+          className={inputClass}
+          value={draft.name}
+          onChange={(event) => onChange({ ...draft, name: event.target.value })}
+          placeholder="Введите имя"
+        />
       </label>
 
       <label className="text-sm font-medium text-slate-600">
-        ???
-        <select className={inputClass} value={draft.sex} onChange={(event) => onChange({ ...draft, sex: event.target.value === "male" ? "male" : "female" })}>
-          <option value="female">???????</option>
-          <option value="male">???????</option>
+        Пол
+        <select
+          className={inputClass}
+          value={draft.sex}
+          onChange={(event) => onChange({ ...draft, sex: event.target.value === "male" ? "male" : "female" })}
+        >
+          <option value="female">Женский</option>
+          <option value="male">Мужской</option>
         </select>
       </label>
 
       <label className="text-sm font-medium text-slate-600">
-        ???????
-        <input className={inputClass} type="number" min="14" step="1" value={draft.age} onChange={(event) => onChange({ ...draft, age: event.target.value })} placeholder="???????" />
+        Возраст
+        <input
+          className={inputClass}
+          type="number"
+          min="14"
+          step="1"
+          value={draft.age}
+          onChange={(event) => onChange({ ...draft, age: event.target.value })}
+          placeholder="Возраст"
+        />
       </label>
 
       <ActivityInput value={draft.activityLevel} onChange={(activityLevel) => onChange({ ...draft, activityLevel })} />
 
       <label className="text-sm font-medium text-slate-600">
-        ????
-        <input className={inputClass} type="number" min="100" step="1" value={draft.heightCm} onChange={(event) => onChange({ ...draft, heightCm: event.target.value })} placeholder="????" />
+        Рост
+        <input
+          className={inputClass}
+          type="number"
+          min="100"
+          step="1"
+          value={draft.heightCm}
+          onChange={(event) => onChange({ ...draft, heightCm: event.target.value })}
+          placeholder="Рост, см"
+        />
       </label>
 
       <label className="text-sm font-medium text-slate-600">
-        ???
-        <input className={inputClass} type="number" min="1" step="0.1" value={draft.weightKg} onChange={(event) => onChange({ ...draft, weightKg: event.target.value })} placeholder="???" />
+        Вес
+        <input
+          className={inputClass}
+          type="number"
+          min="1"
+          step="0.1"
+          value={draft.weightKg}
+          onChange={(event) => onChange({ ...draft, weightKg: event.target.value })}
+          placeholder="Вес, кг"
+        />
       </label>
 
       <label className="text-sm font-medium text-slate-600">
-        ???????? ???
-        <input className={inputClass} type="number" min="1" step="0.1" value={draft.goalWeightKg} onChange={(event) => onChange({ ...draft, goalWeightKg: event.target.value })} placeholder="???????? ???" />
+        Желаемый вес
+        <input
+          className={inputClass}
+          type="number"
+          min="1"
+          step="0.1"
+          value={draft.goalWeightKg}
+          onChange={(event) => onChange({ ...draft, goalWeightKg: event.target.value })}
+          placeholder="Желаемый вес, кг"
+        />
       </label>
 
-      <FormulaModeSwitch value={draft.formulaMode} onChange={(formulaMode) => onChange({ ...draft, formulaMode })} />
+      <FormulaModeSwitch value={draft.formulaMode} onChange={(formulaMode) => onChange(applyDraftMode(formulaMode, draft))} />
 
       <FormulaInputs
         mode={draft.formulaMode}
-        values={{
-          proteinPerKg: draft.proteinPerKg,
-          fatPerKg: draft.fatPerKg,
-          carbsPerKg: draft.carbsPerKg,
-          fiberTarget: draft.fiberTarget,
-          magnesiumTarget: draft.magnesiumTarget,
-          ironTarget: draft.ironTarget,
-          zincTarget: draft.zincTarget,
-          omega3Target: draft.omega3Target,
-          vitaminB12Target: draft.vitaminB12Target,
-        }}
+        values={getDraftFormulaValues(draft)}
         onChange={(changes) => onChange({ ...draft, ...changes })}
       />
 
-      <div className="rounded-[1.2rem] bg-slate-50 px-4 py-3 text-sm text-slate-600">
-        <div className="font-semibold text-slate-900">???????????? ????</div>
-        <div className="mt-2">{preview.kcal} ????</div>
-        <div className="mt-1">? {preview.protein} • ? {preview.fat} • ? {preview.carbs}</div>
-        <div className="mt-2 text-xs text-slate-500">????????? {preview.fiber} ? • ?????? {preview.magnesium} ?? • ?????? {preview.iron} ??</div>
-        <div className="mt-1 text-xs text-slate-500">???? {preview.zinc} ?? • ?????-3 {preview.omega3} ? • B12 {preview.vitaminB12} ???</div>
-      </div>
+      <SummaryPreview preview={preview} />
 
       <div className="flex items-center gap-3">
         {onCancel ? (
-          <button type="button" onClick={onCancel} className="rounded-[1rem] bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700">
-            ??????
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-[1rem] bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700"
+          >
+            Закрыть
           </button>
         ) : null}
-        <button type="button" disabled={!valid} onClick={onSubmit} className="theme-accent-button ml-auto rounded-[1rem] px-5 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-45">
-          ??????? ???????
+        <button
+          type="button"
+          disabled={!valid}
+          onClick={onSubmit}
+          className="theme-accent-button ml-auto rounded-[1rem] px-5 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          Сохранить профиль
         </button>
       </div>
     </div>
@@ -363,99 +565,137 @@ function CurrentProfileForm({
   onUpdate,
   onDelete,
 }: {
-  user: NonNullable<ReturnType<typeof getSelectedUser>>;
-  onUpdate: (changes: {
-    name?: string;
-    sex?: "female" | "male";
-    age?: number;
-    activityLevel?: ActivityLevel;
-    heightCm?: number;
-    weightKg?: number;
-    goalWeightKg?: number;
-    formulaMode?: FormulaMode;
-    proteinPerKg?: number;
-    fatPerKg?: number;
-    carbsPerKg?: number;
-    fiberTarget?: number;
-    magnesiumTarget?: number;
-    ironTarget?: number;
-    zincTarget?: number;
-    omega3Target?: number;
-    vitaminB12Target?: number;
-  }) => void;
+  user: UserProfile;
+  onUpdate: (changes: Partial<UserProfile>) => void;
   onDelete?: () => void;
 }) {
+  const handleModeChange = (formulaMode: FormulaMode) => {
+    if (formulaMode !== "custom") {
+      onUpdate({ formulaMode });
+      return;
+    }
+
+    const fallback = calculateTargets({ ...user, formulaMode: "maintain" });
+    const coefficients = resolveProfileFormula(user);
+
+    onUpdate({
+      formulaMode,
+      proteinPerKg: user.proteinPerKg || coefficients.proteinPerKg,
+      fatPerKg: user.fatPerKg || coefficients.fatPerKg,
+      carbsPerKg: user.carbsPerKg ?? coefficients.carbsPerKg,
+      fiberTarget: user.fiberTarget ?? fallback.fiber,
+      magnesiumTarget: user.magnesiumTarget ?? fallback.magnesium,
+      ironTarget: user.ironTarget ?? fallback.iron,
+      zincTarget: user.zincTarget ?? fallback.zinc,
+      omega3Target: user.omega3Target ?? fallback.omega3,
+      vitaminB12Target: user.vitaminB12Target ?? fallback.vitaminB12,
+    });
+  };
+
   return (
     <div className="grid gap-4">
       <label className="text-sm font-medium text-slate-600">
-        ???
+        Имя
         <input className={inputClass} value={user.name} onChange={(event) => onUpdate({ name: event.target.value })} />
       </label>
 
       <label className="text-sm font-medium text-slate-600">
-        ???
-        <select className={inputClass} value={user.sex} onChange={(event) => onUpdate({ sex: event.target.value === "male" ? "male" : "female" })}>
-          <option value="female">???????</option>
-          <option value="male">???????</option>
+        Пол
+        <select
+          className={inputClass}
+          value={user.sex}
+          onChange={(event) => onUpdate({ sex: event.target.value === "male" ? "male" : "female" })}
+        >
+          <option value="female">Женский</option>
+          <option value="male">Мужской</option>
         </select>
       </label>
 
       <label className="text-sm font-medium text-slate-600">
-        ???????
-        <input className={inputClass} type="number" min="14" step="1" value={user.age ?? 30} onChange={(event) => onUpdate({ age: sanitizeNumber(event.target.value, user.age ?? 30) })} />
+        Возраст
+        <input
+          className={inputClass}
+          type="number"
+          min="14"
+          step="1"
+          value={user.age ?? 30}
+          onChange={(event) => onUpdate({ age: sanitizeNumber(event.target.value, user.age ?? 30) })}
+        />
       </label>
 
       <ActivityInput value={user.activityLevel ?? "sedentary"} onChange={(activityLevel) => onUpdate({ activityLevel })} />
 
       <label className="text-sm font-medium text-slate-600">
-        ????
-        <input className={inputClass} type="number" min="100" step="1" value={user.heightCm ?? ""} onChange={(event) => onUpdate({ heightCm: sanitizeNumber(event.target.value, user.heightCm ?? 0) })} />
+        Рост
+        <input
+          className={inputClass}
+          type="number"
+          min="100"
+          step="1"
+          value={user.heightCm ?? ""}
+          onChange={(event) => onUpdate({ heightCm: sanitizeNumber(event.target.value, user.heightCm ?? 0) })}
+        />
       </label>
 
       <label className="text-sm font-medium text-slate-600">
-        ???
-        <input className={inputClass} type="number" min="1" step="0.1" value={user.weightKg} onChange={(event) => onUpdate({ weightKg: sanitizeNumber(event.target.value, user.weightKg) })} />
+        Вес
+        <input
+          className={inputClass}
+          type="number"
+          min="1"
+          step="0.1"
+          value={user.weightKg}
+          onChange={(event) => onUpdate({ weightKg: sanitizeNumber(event.target.value, user.weightKg) })}
+        />
       </label>
 
       <label className="text-sm font-medium text-slate-600">
-        ???????? ???
-        <input className={inputClass} type="number" min="1" step="0.1" value={user.goalWeightKg ?? user.weightKg} onChange={(event) => onUpdate({ goalWeightKg: sanitizeNumber(event.target.value, user.goalWeightKg ?? user.weightKg) })} />
+        Желаемый вес
+        <input
+          className={inputClass}
+          type="number"
+          min="1"
+          step="0.1"
+          value={user.goalWeightKg ?? user.weightKg}
+          onChange={(event) =>
+            onUpdate({ goalWeightKg: sanitizeNumber(event.target.value, user.goalWeightKg ?? user.weightKg) })
+          }
+        />
       </label>
 
-      <FormulaModeSwitch value={user.formulaMode} onChange={(formulaMode) => onUpdate({ formulaMode })} />
+      <FormulaModeSwitch value={user.formulaMode} onChange={handleModeChange} />
 
       <FormulaInputs
         mode={user.formulaMode}
-        values={{
-          proteinPerKg: String(user.proteinPerKg),
-          fatPerKg: String(user.fatPerKg),
-          carbsPerKg: String(user.carbsPerKg),
-          fiberTarget: String(user.fiberTarget ?? 0),
-          magnesiumTarget: String(user.magnesiumTarget ?? 0),
-          ironTarget: String(user.ironTarget ?? 0),
-          zincTarget: String(user.zincTarget ?? 0),
-          omega3Target: String(user.omega3Target ?? 0),
-          vitaminB12Target: String(user.vitaminB12Target ?? 0),
-        }}
+        values={getProfileFormulaValues(user)}
         onChange={(changes) =>
           onUpdate({
-            proteinPerKg: changes.proteinPerKg === undefined ? undefined : sanitizeNumber(changes.proteinPerKg, user.proteinPerKg),
+            proteinPerKg:
+              changes.proteinPerKg === undefined ? undefined : sanitizeNumber(changes.proteinPerKg, user.proteinPerKg),
             fatPerKg: changes.fatPerKg === undefined ? undefined : sanitizeNumber(changes.fatPerKg, user.fatPerKg),
-            carbsPerKg: changes.carbsPerKg === undefined ? undefined : sanitizeNumber(changes.carbsPerKg, user.carbsPerKg),
-            fiberTarget: changes.fiberTarget === undefined ? undefined : sanitizeNumber(changes.fiberTarget, user.fiberTarget ?? 0),
-            magnesiumTarget: changes.magnesiumTarget === undefined ? undefined : sanitizeNumber(changes.magnesiumTarget, user.magnesiumTarget ?? 0),
-            ironTarget: changes.ironTarget === undefined ? undefined : sanitizeNumber(changes.ironTarget, user.ironTarget ?? 0),
-            zincTarget: changes.zincTarget === undefined ? undefined : sanitizeNumber(changes.zincTarget, user.zincTarget ?? 0),
-            omega3Target: changes.omega3Target === undefined ? undefined : sanitizeNumber(changes.omega3Target, user.omega3Target ?? 0),
+            carbsPerKg:
+              changes.carbsPerKg === undefined ? undefined : sanitizeNumber(changes.carbsPerKg, user.carbsPerKg),
+            fiberTarget: changes.fiberTarget === undefined ? undefined : getNumberOrNull(changes.fiberTarget),
+            magnesiumTarget:
+              changes.magnesiumTarget === undefined ? undefined : getNumberOrNull(changes.magnesiumTarget),
+            ironTarget: changes.ironTarget === undefined ? undefined : getNumberOrNull(changes.ironTarget),
+            zincTarget: changes.zincTarget === undefined ? undefined : getNumberOrNull(changes.zincTarget),
+            omega3Target: changes.omega3Target === undefined ? undefined : getNumberOrNull(changes.omega3Target),
             vitaminB12Target:
-              changes.vitaminB12Target === undefined ? undefined : sanitizeNumber(changes.vitaminB12Target, user.vitaminB12Target ?? 0),
+              changes.vitaminB12Target === undefined ? undefined : getNumberOrNull(changes.vitaminB12Target),
           })
         }
       />
 
+      <SummaryPreview preview={calculateTargets(user)} />
+
       {onDelete ? (
-        <button type="button" onClick={onDelete} className="rounded-[1rem] bg-[var(--color-danger-soft)] px-4 py-3 text-sm font-semibold text-[var(--color-danger)]">
-          ??????? ???????
+        <button
+          type="button"
+          onClick={onDelete}
+          className="rounded-[1rem] bg-[var(--color-danger-soft)] px-4 py-3 text-sm font-semibold text-[var(--color-danger)]"
+        >
+          Удалить профиль
         </button>
       ) : null}
     </div>
@@ -479,8 +719,10 @@ export function ProfileScreen() {
   const draftValid = useMemo(() => isDraftValid(draft), [draft]);
 
   if (!state.hydrated) {
-    return <div className="app-card rounded-[2rem] p-6 text-sm text-slate-500">???????? ???????...</div>;
+    return <div className="app-card rounded-[2rem] p-6 text-sm text-slate-500">Загружаю профиль...</div>;
   }
+
+  const resetDraft = () => setDraft(emptyDraft);
 
   const saveNewProfile = () => {
     createProfile({
@@ -495,14 +737,14 @@ export function ProfileScreen() {
       proteinPerKg: sanitizeNumber(draft.proteinPerKg, FORMULA_PRESETS.maintain.proteinPerKg),
       fatPerKg: sanitizeNumber(draft.fatPerKg, FORMULA_PRESETS.maintain.fatPerKg),
       carbsPerKg: sanitizeNumber(draft.carbsPerKg, 0),
-      fiberTarget: sanitizeNumber(draft.fiberTarget, 0),
-      magnesiumTarget: sanitizeNumber(draft.magnesiumTarget, 0),
-      ironTarget: sanitizeNumber(draft.ironTarget, 0),
-      zincTarget: sanitizeNumber(draft.zincTarget, 0),
-      omega3Target: sanitizeNumber(draft.omega3Target, 0),
-      vitaminB12Target: sanitizeNumber(draft.vitaminB12Target, 0),
+      fiberTarget: getNumberOrNull(draft.fiberTarget),
+      magnesiumTarget: getNumberOrNull(draft.magnesiumTarget),
+      ironTarget: getNumberOrNull(draft.ironTarget),
+      zincTarget: getNumberOrNull(draft.zincTarget),
+      omega3Target: getNumberOrNull(draft.omega3Target),
+      vitaminB12Target: getNumberOrNull(draft.vitaminB12Target),
     });
-    setDraft(emptyDraft);
+    resetDraft();
     setShowCreateProfile(false);
     setShowEditProfile(false);
     setShowSwitcher(false);
@@ -517,7 +759,7 @@ export function ProfileScreen() {
       setShowTransferImport(false);
       setShowCreateProfile(false);
     } catch {
-      setTransferError("???? ?? ???????. ?????????, ??? ???????? ??? ???????.");
+      setTransferError("Ключ не подошел. Проверьте, что скопировали его полностью.");
     }
   };
 
@@ -535,9 +777,11 @@ export function ProfileScreen() {
     return (
       <div className="space-y-4">
         <section className="app-card rounded-[2rem] p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">???????</p>
-          <h1 className="mt-2 text-2xl font-semibold text-slate-900">???????? ??????? ??? ?????????? ??????</h1>
-          <p className="mt-2 text-sm text-slate-500">????? ?????? ? ?????? ??????? ??? ???????? ???? ???????? ?? ??????? ????????.</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Профиль</p>
+          <h1 className="mt-2 text-2xl font-semibold text-slate-900">Создайте профиль или перенесите данные</h1>
+          <p className="mt-2 text-sm text-slate-500">
+            Можно начать с нового профиля или вставить ключ переноса, если данные уже есть в другом браузере.
+          </p>
 
           <div className="mt-5 flex flex-wrap gap-3">
             <button
@@ -549,7 +793,7 @@ export function ProfileScreen() {
               }}
               className="theme-accent-button rounded-[1.2rem] px-5 py-3 text-sm font-semibold"
             >
-              ??????? ???????
+              Создать профиль
             </button>
             <button
               type="button"
@@ -560,28 +804,32 @@ export function ProfileScreen() {
               }}
               className="theme-elevated rounded-[1.2rem] px-5 py-3 text-sm font-semibold text-slate-700"
             >
-              ?????? ????
+              Ввести ключ
             </button>
           </div>
 
           {showTransferImport ? (
             <div className="theme-important mt-5 rounded-[1.4rem] px-4 py-4">
-              <div className="text-sm font-semibold text-slate-900">???? ????????</div>
-              <p className="mt-1 text-sm text-slate-600">???????? ???? ?? ??????? ????????, ? ?????? ?????????? ????.</p>
+              <div className="text-sm font-semibold text-slate-900">Ключ переноса</div>
+              <p className="mt-1 text-sm text-slate-600">
+                Вставьте ключ из другого браузера, и приложение заменит текущие локальные данные.
+              </p>
               <textarea
                 value={transferKeyInput}
                 onChange={(event) => setTransferKeyInput(event.target.value)}
-                className="theme-input mt-3 min-h-28 w-full rounded-[1.2rem] border border-[var(--color-outline)] px-4 py-3 outline-none"
-                placeholder="???????? ???? ????????"
+                className={textAreaClass}
+                placeholder="Вставьте ключ переноса"
               />
-              {transferError ? <div className="theme-status-warning mt-3 rounded-[1rem] px-4 py-3 text-sm">{transferError}</div> : null}
+              {transferError ? (
+                <div className="theme-status-warning mt-3 rounded-[1rem] px-4 py-3 text-sm">{transferError}</div>
+              ) : null}
               <button
                 type="button"
                 onClick={importTransferKey}
                 disabled={!transferKeyInput.trim()}
                 className="theme-accent-button mt-4 rounded-[1rem] px-5 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-45"
               >
-                ????????? ??????
+                Загрузить данные
               </button>
             </div>
           ) : null}
@@ -596,7 +844,7 @@ export function ProfileScreen() {
                 onSubmit={saveNewProfile}
                 onCancel={() => {
                   setShowCreateProfile(false);
-                  setDraft(emptyDraft);
+                  resetDraft();
                 }}
               />
             </div>
@@ -614,35 +862,51 @@ export function ProfileScreen() {
       <section className="app-card rounded-[2rem] p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">???????</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Профиль</p>
             <h1 className="mt-2 text-2xl font-semibold text-slate-900">{selectedUser.name}</h1>
-            <p className="mt-2 text-sm text-slate-500">{selectedUser.age ?? 30} ??? • {selectedUser.heightCm ?? "—"} ?? • {selectedUser.weightKg} ??</p>
-            <p className="mt-1 text-sm text-slate-500">???? {selectedUser.goalWeightKg ?? selectedUser.weightKg} ?? • {activityLabel(selectedUser.activityLevel ?? "sedentary")}</p>
+            <p className="mt-2 text-sm text-slate-500">
+              {selectedUser.age ?? 30} лет • {selectedUser.heightCm ?? "—"} см • {selectedUser.weightKg} кг
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              Цель {selectedUser.goalWeightKg ?? selectedUser.weightKg} кг •{" "}
+              {activityTitles[selectedUser.activityLevel ?? "sedentary"]}
+            </p>
           </div>
-          <button type="button" onClick={() => setShowEditProfile((value) => !value)} className="theme-accent-button rounded-[1rem] px-4 py-3 text-sm font-semibold">
-            {showEditProfile ? "???????" : "?????"}
+          <button
+            type="button"
+            onClick={() => setShowEditProfile((value) => !value)}
+            className="theme-accent-button rounded-[1rem] px-4 py-3 text-sm font-semibold"
+          >
+            {showEditProfile ? "Закрыть" : "Зайти"}
           </button>
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-3">
           <div className="rounded-[1.25rem] bg-white px-4 py-4">
-            <div className="text-xs uppercase tracking-[0.16em] text-slate-400">????</div>
-            <div className="mt-2 text-2xl font-semibold text-slate-900">{targets.kcal} ????</div>
-            <div className="mt-2 text-xs text-slate-500">{formulaLabel(selectedUser.formulaMode)}</div>
+            <div className="text-xs uppercase tracking-[0.16em] text-slate-400">Цель</div>
+            <div className="mt-2 text-2xl font-semibold text-slate-900">{targets.kcal} ккал</div>
+            <div className="mt-2 text-xs text-slate-500">{formulaTitles[selectedUser.formulaMode]}</div>
           </div>
           <div className="rounded-[1.25rem] bg-white px-4 py-4 text-sm text-slate-600">
-            <div>? {targets.protein}</div>
-            <div className="mt-1">? {targets.fat}</div>
-            <div className="mt-1">? {targets.carbs}</div>
+            <div>Б {targets.protein}</div>
+            <div className="mt-1">Ж {targets.fat}</div>
+            <div className="mt-1">У {targets.carbs}</div>
           </div>
         </div>
 
         <div className="mt-4 rounded-[1.35rem] bg-[var(--color-mint-soft)] px-4 py-4 text-sm text-slate-700">
-          <div className="font-semibold text-slate-900">{formulaLabel(selectedUser.formulaMode)}</div>
+          <div className="font-semibold text-slate-900">{formulaTitles[selectedUser.formulaMode]}</div>
           <div className="mt-1">{formulaDescriptions[selectedUser.formulaMode]}</div>
-          <div className="mt-2">? {selectedFormula.proteinPerKg} / ? {selectedFormula.fatPerKg} ?? ?? • ? {selectedFormula.carbsPerKg} ?? ??</div>
-          <div className="mt-3 text-xs text-slate-500">????????? {targets.fiber} ? • ?????? {targets.magnesium} ?? • ?????? {targets.iron} ?? • ???? {targets.zinc} ??</div>
-          <div className="mt-1 text-xs text-slate-500">?????-3 {targets.omega3} ? • B12 {targets.vitaminB12} ???</div>
+          <div className="mt-2">
+            Б {selectedFormula.proteinPerKg} / Ж {selectedFormula.fatPerKg} / У {selectedFormula.carbsPerKg} на кг
+          </div>
+          <div className="mt-3 text-xs text-slate-500">
+            Клетчатка {targets.fiber} г • Магний {targets.magnesium} мг • Железо {targets.iron} мг • Цинк{" "}
+            {targets.zinc} мг
+          </div>
+          <div className="mt-1 text-xs text-slate-500">
+            Омега-3 {targets.omega3} г • B12 {targets.vitaminB12} мкг
+          </div>
         </div>
 
         {showEditProfile ? (
@@ -653,7 +917,7 @@ export function ProfileScreen() {
               onDelete={
                 state.profiles.length > 1
                   ? () => {
-                      if (window.confirm(`??????? ??????? ${selectedUser.name}?`)) {
+                      if (window.confirm(`Удалить профиль ${selectedUser.name}?`)) {
                         deleteProfile(selectedUser.id);
                       }
                     }
@@ -667,21 +931,33 @@ export function ProfileScreen() {
       <section className="app-card rounded-[2rem] p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">??????? ? ???????? ??????</h2>
-            <p className="mt-1 text-sm text-slate-500">????? ????????? ?????? ? ?????? ??????? ?? ????? ??? ??????? backup-????.</p>
+            <h2 className="text-lg font-semibold text-slate-900">Перенос и сохранение данных</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Скопируйте ключ для другого браузера или скачайте backup-файл.
+            </p>
           </div>
         </div>
 
         <div className="theme-important mt-4 rounded-[1.35rem] px-4 py-4">
-          <div className="text-sm font-semibold text-slate-900">???? ????????</div>
-          <p className="mt-1 text-sm text-slate-600">?????????? ???? ???? ? ???????? ??? ? ?????? ???????? ?????? ???????? ???????.</p>
-          <textarea value={transferKey} readOnly className="theme-input mt-3 min-h-28 w-full rounded-[1.2rem] border border-[var(--color-outline)] px-4 py-3 outline-none" />
+          <div className="text-sm font-semibold text-slate-900">Ключ переноса</div>
+          <p className="mt-1 text-sm text-slate-600">
+            Скопируйте этот ключ и вставьте его в другом браузере в разделе импорта.
+          </p>
+          <textarea value={transferKey} readOnly className={textAreaClass} />
           <div className="mt-3 flex flex-wrap gap-3">
-            <button type="button" onClick={copyTransferKey} className="theme-accent-button rounded-[1rem] px-5 py-3 text-sm font-semibold">
-              {copied ? "???????????" : "??????????? ????"}
+            <button
+              type="button"
+              onClick={copyTransferKey}
+              className="theme-accent-button rounded-[1rem] px-5 py-3 text-sm font-semibold"
+            >
+              {copied ? "Скопировано" : "Скопировать ключ"}
             </button>
-            <button type="button" onClick={() => downloadStateBackup(buildTransferState(state))} className="theme-elevated rounded-[1rem] px-5 py-3 text-sm font-semibold text-slate-700">
-              ??????? backup
+            <button
+              type="button"
+              onClick={() => downloadStateBackup(buildTransferState(state))}
+              className="theme-elevated rounded-[1rem] px-5 py-3 text-sm font-semibold text-slate-700"
+            >
+              Скачать backup
             </button>
           </div>
         </div>
@@ -695,16 +971,28 @@ export function ProfileScreen() {
             }}
             className="theme-elevated rounded-[1rem] px-4 py-3 text-sm font-semibold text-slate-700"
           >
-            {showTransferImport ? "?????? ??????" : "?????? ???? ????????"}
+            {showTransferImport ? "Закрыть импорт" : "Вставить ключ переноса"}
           </button>
 
           {showTransferImport ? (
             <div className="mt-4 rounded-[1.2rem] bg-slate-50 px-4 py-4">
-              <div className="text-sm font-semibold text-slate-900">?????? ?????</div>
-              <textarea value={transferKeyInput} onChange={(event) => setTransferKeyInput(event.target.value)} className="theme-input mt-3 min-h-28 w-full rounded-[1.2rem] border border-[var(--color-outline)] px-4 py-3 outline-none" placeholder="???????? ???? ????????" />
-              {transferError ? <div className="theme-status-warning mt-3 rounded-[1rem] px-4 py-3 text-sm">{transferError}</div> : null}
-              <button type="button" onClick={importTransferKey} disabled={!transferKeyInput.trim()} className="theme-accent-button mt-4 rounded-[1rem] px-5 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-45">
-                ????????? ?????? ?? ?????
+              <div className="text-sm font-semibold text-slate-900">Импорт ключа</div>
+              <textarea
+                value={transferKeyInput}
+                onChange={(event) => setTransferKeyInput(event.target.value)}
+                className={textAreaClass}
+                placeholder="Вставьте ключ переноса"
+              />
+              {transferError ? (
+                <div className="theme-status-warning mt-3 rounded-[1rem] px-4 py-3 text-sm">{transferError}</div>
+              ) : null}
+              <button
+                type="button"
+                onClick={importTransferKey}
+                disabled={!transferKeyInput.trim()}
+                className="theme-accent-button mt-4 rounded-[1rem] px-5 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                Загрузить данные по ключу
               </button>
             </div>
           ) : null}
@@ -714,18 +1002,26 @@ export function ProfileScreen() {
       <section className="app-card rounded-[2rem] p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">?????????????? ???????</h2>
-            <p className="mt-1 text-sm text-slate-500">????? ????? ???????? ?????? ??????? ??? ?????? ?????????????.</p>
+            <h2 className="text-lg font-semibold text-slate-900">Дополнительные профили</h2>
+            <p className="mt-1 text-sm text-slate-500">Если нужно, можно хранить несколько профилей в одном приложении.</p>
           </div>
-          <button type="button" onClick={() => setShowCreateProfile((value) => !value)} className="rounded-full bg-[var(--color-accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--color-accent)]">
-            {showCreateProfile ? "??????" : "??????? ???????"}
+          <button
+            type="button"
+            onClick={() => setShowCreateProfile((value) => !value)}
+            className="rounded-full bg-[var(--color-accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--color-accent)]"
+          >
+            {showCreateProfile ? "Закрыть" : "Создать профиль"}
           </button>
         </div>
 
         {state.profiles.length > 1 ? (
           <div className="mt-4">
-            <button type="button" onClick={() => setShowSwitcher((value) => !value)} className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700">
-              {showSwitcher ? "?????? ???????" : "??????? ???????"}
+            <button
+              type="button"
+              onClick={() => setShowSwitcher((value) => !value)}
+              className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700"
+            >
+              {showSwitcher ? "Скрыть список" : "Сменить профиль"}
             </button>
             {showSwitcher ? (
               <div className="mt-4">
@@ -745,7 +1041,7 @@ export function ProfileScreen() {
               onSubmit={saveNewProfile}
               onCancel={() => {
                 setShowCreateProfile(false);
-                setDraft(emptyDraft);
+                resetDraft();
               }}
             />
           </div>
@@ -754,4 +1050,3 @@ export function ProfileScreen() {
     </div>
   );
 }
-
