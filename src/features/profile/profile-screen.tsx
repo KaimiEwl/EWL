@@ -204,6 +204,38 @@ function roundInputValue(value: number) {
   return Math.round(value * 10) / 10;
 }
 
+function buildMacroValuesFromCalories(kcal: number, weight: number) {
+  if (weight <= 0 || kcal <= 0) {
+    return {
+      proteinPerKg: "0",
+      fatPerKg: "0",
+      carbsPerKg: "0",
+    };
+  }
+
+  const baseProteinPerKg = FORMULA_PRESETS.maintain.proteinPerKg;
+  const baseFatPerKg = FORMULA_PRESETS.maintain.fatPerKg;
+  const baseProteinCalories = weight * baseProteinPerKg * 4;
+  const baseFatCalories = weight * baseFatPerKg * 9;
+  const baseCalories = baseProteinCalories + baseFatCalories;
+
+  if (kcal <= baseCalories) {
+    const scale = kcal / baseCalories;
+    return {
+      proteinPerKg: String(roundInputValue(baseProteinPerKg * scale)),
+      fatPerKg: String(roundInputValue(baseFatPerKg * scale)),
+      carbsPerKg: "0",
+    };
+  }
+
+  const carbsPerKg = (kcal - baseCalories) / 4 / weight;
+  return {
+    proteinPerKg: String(roundInputValue(baseProteinPerKg)),
+    fatPerKg: String(roundInputValue(baseFatPerKg)),
+    carbsPerKg: String(roundInputValue(carbsPerKg)),
+  };
+}
+
 function calculateMacroCalories(values: Pick<FormulaValues, "proteinPerKg" | "fatPerKg" | "carbsPerKg">, weight: number) {
   const protein = sanitizeNumber(values.proteinPerKg, 0) * weight;
   const fat = sanitizeNumber(values.fatPerKg, 0) * weight;
@@ -230,6 +262,11 @@ function syncCustomFormulaValues(
       nextValues.proteinPerKg = String(roundInputValue(sanitizeNumber(currentValues.proteinPerKg, 0) * scale));
       nextValues.fatPerKg = String(roundInputValue(sanitizeNumber(currentValues.fatPerKg, 0) * scale));
       nextValues.carbsPerKg = String(roundInputValue(sanitizeNumber(currentValues.carbsPerKg, 0) * scale));
+    } else if (nextKcal > 0 && weight > 0) {
+      const autoValues = buildMacroValuesFromCalories(nextKcal, weight);
+      nextValues.proteinPerKg = autoValues.proteinPerKg;
+      nextValues.fatPerKg = autoValues.fatPerKg;
+      nextValues.carbsPerKg = autoValues.carbsPerKg;
     }
 
     nextValues.customKcalTarget = changes.customKcalTarget;
@@ -416,7 +453,7 @@ function FormulaInputs({
       <div className="rounded-[1.25rem] bg-slate-50 px-4 py-4">
         <div className="text-sm font-semibold text-slate-900">Свои Б/Ж/У на кг</div>
         <div className="mt-1 text-xs leading-5 text-slate-500">
-          Здесь связываются только калории и Б/Ж/У на кг. Вес профиля и желаемый вес не меняются.
+          Введите Б/Ж/У на кг, чтобы получить нужное количество калорий. Или введите калории, и Б/Ж/У заполнятся автоматически.
         </div>
         <div className="mt-3 grid grid-cols-2 gap-3">
           <label className="text-sm font-medium text-slate-600">
