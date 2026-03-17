@@ -59,6 +59,7 @@ function migrateState(state: PersistedAppState): PersistedAppState {
       activityLevel: normalizeActivityLevel(profile.activityLevel),
       heightCm: profile.heightCm ?? null,
       goalWeightKg: profile.goalWeightKg ?? profile.weightKg,
+      customKcalTarget: profile.customKcalTarget ?? null,
       fiberTarget: profile.fiberTarget ?? null,
       magnesiumTarget: profile.magnesiumTarget ?? null,
       ironTarget: profile.ironTarget ?? null,

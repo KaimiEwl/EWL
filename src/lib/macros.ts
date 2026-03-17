@@ -151,7 +151,10 @@ export function calculateTargets(profile: UserProfile): NutritionTotals {
     protein = roundMacro(weight * profile.proteinPerKg);
     fat = roundMacro(weight * profile.fatPerKg);
     carbs = roundMacro(weight * profile.carbsPerKg);
-    kcal = roundKcal(protein * 4 + fat * 9 + carbs * 4);
+    kcal =
+      typeof profile.customKcalTarget === "number" && profile.customKcalTarget > 0
+        ? roundKcal(profile.customKcalTarget)
+        : roundKcal(protein * 4 + fat * 9 + carbs * 4);
   } else {
     const coefficients = FORMULA_PRESETS[mode];
     kcal = calculateCalorieTargetFromMifflin(profile);

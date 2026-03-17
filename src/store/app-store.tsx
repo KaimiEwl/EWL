@@ -33,6 +33,7 @@ type ProfileInput = Pick<
   | "weightKg"
   | "goalWeightKg"
   | "formulaMode"
+  | "customKcalTarget"
   | "proteinPerKg"
   | "fatPerKg"
   | "carbsPerKg"
@@ -136,6 +137,7 @@ function normalizeState(payload: PersistedAppState): PersistedAppState {
       activityLevel: normalizeActivityLevel(profile.activityLevel),
       heightCm: profile.heightCm ?? null,
       goalWeightKg: profile.goalWeightKg ?? profile.weightKg,
+      customKcalTarget: profile.customKcalTarget ?? null,
       fiberTarget: profile.fiberTarget ?? null,
       magnesiumTarget: profile.magnesiumTarget ?? null,
       ironTarget: profile.ironTarget ?? null,
@@ -336,6 +338,7 @@ function reducer(state: HydratedState, action: Action): HydratedState {
         activityLevel: normalizeActivityLevel(action.payload.activityLevel),
         heightCm: action.payload.heightCm ?? null,
         goalWeightKg: action.payload.goalWeightKg ?? action.payload.weightKg,
+        customKcalTarget: action.payload.customKcalTarget ?? null,
         createdAt: now,
         updatedAt: now,
       };
@@ -359,6 +362,7 @@ function reducer(state: HydratedState, action: Action): HydratedState {
                   ...cleanedChanges,
                   age: cleanedChanges.age ?? profile.age ?? 30,
                   activityLevel: normalizeActivityLevel(cleanedChanges.activityLevel ?? profile.activityLevel),
+                  customKcalTarget: cleanedChanges.customKcalTarget ?? profile.customKcalTarget ?? null,
                   fiberTarget: cleanedChanges.fiberTarget ?? profile.fiberTarget ?? null,
                   magnesiumTarget: cleanedChanges.magnesiumTarget ?? profile.magnesiumTarget ?? null,
                   ironTarget: cleanedChanges.ironTarget ?? profile.ironTarget ?? null,

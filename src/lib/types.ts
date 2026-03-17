@@ -22,6 +22,7 @@ export interface UserProfile {
   weightKg: number;
   goalWeightKg?: number | null;
   formulaMode: FormulaMode;
+  customKcalTarget?: number | null;
   proteinPerKg: number;
   fatPerKg: number;
   carbsPerKg: number;

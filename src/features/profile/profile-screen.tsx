@@ -56,6 +56,7 @@ type ProfileDraft = {
   weightKg: string;
   goalWeightKg: string;
   formulaMode: FormulaMode;
+  customKcalTarget: string;
   proteinPerKg: string;
   fatPerKg: string;
   carbsPerKg: string;
@@ -71,6 +72,7 @@ type FormulaFieldKey =
   | "proteinPerKg"
   | "fatPerKg"
   | "carbsPerKg"
+  | "customKcalTarget"
   | "fiberTarget"
   | "magnesiumTarget"
   | "ironTarget"
@@ -89,6 +91,7 @@ const emptyDraft: ProfileDraft = {
   weightKg: "",
   goalWeightKg: "",
   formulaMode: "maintain",
+  customKcalTarget: "",
   proteinPerKg: String(FORMULA_PRESETS.maintain.proteinPerKg),
   fatPerKg: String(FORMULA_PRESETS.maintain.fatPerKg),
   carbsPerKg: "0",
@@ -111,6 +114,7 @@ function getPreviewProfile(draft: ProfileDraft): UserProfile {
     weightKg: sanitizeNumber(draft.weightKg, 0),
     goalWeightKg: sanitizeNumber(draft.goalWeightKg, 0) || sanitizeNumber(draft.weightKg, 0),
     formulaMode: draft.formulaMode,
+    customKcalTarget: draft.customKcalTarget.trim() ? sanitizeNumber(draft.customKcalTarget, 0) : null,
     proteinPerKg: sanitizeNumber(draft.proteinPerKg, FORMULA_PRESETS.maintain.proteinPerKg),
     fatPerKg: sanitizeNumber(draft.fatPerKg, FORMULA_PRESETS.maintain.fatPerKg),
     carbsPerKg: sanitizeNumber(draft.carbsPerKg, 0),
@@ -134,6 +138,7 @@ function getDraftFormulaValues(draft: ProfileDraft): FormulaValues {
     proteinPerKg: draft.proteinPerKg,
     fatPerKg: draft.fatPerKg,
     carbsPerKg: draft.carbsPerKg,
+    customKcalTarget: draft.customKcalTarget,
     fiberTarget: draft.fiberTarget,
     magnesiumTarget: draft.magnesiumTarget,
     ironTarget: draft.ironTarget,
@@ -150,6 +155,7 @@ function getProfileFormulaValues(user: UserProfile): FormulaValues {
       proteinPerKg: String(user.proteinPerKg),
       fatPerKg: String(user.fatPerKg),
       carbsPerKg: String(user.carbsPerKg),
+      customKcalTarget: user.customKcalTarget == null ? "" : String(user.customKcalTarget),
       fiberTarget: user.fiberTarget == null ? "" : String(user.fiberTarget),
       magnesiumTarget: user.magnesiumTarget == null ? "" : String(user.magnesiumTarget),
       ironTarget: user.ironTarget == null ? "" : String(user.ironTarget),
@@ -166,6 +172,7 @@ function ensureCustomFormulaFields(values: FormulaValues, fallback: NutritionTot
     proteinPerKg: values.proteinPerKg || String(FORMULA_PRESETS.maintain.proteinPerKg),
     fatPerKg: values.fatPerKg || String(FORMULA_PRESETS.maintain.fatPerKg),
     carbsPerKg: values.carbsPerKg || "0",
+    customKcalTarget: values.customKcalTarget || String(fallback.kcal),
     fiberTarget: values.fiberTarget || String(fallback.fiber),
     magnesiumTarget: values.magnesiumTarget || String(fallback.magnesium),
     ironTarget: values.ironTarget || String(fallback.iron),
@@ -218,6 +225,7 @@ function isDraftValid(draft: ProfileDraft) {
     sanitizeNumber(draft.proteinPerKg, 0) > 0 &&
     sanitizeNumber(draft.fatPerKg, 0) > 0 &&
     sanitizeNumber(draft.carbsPerKg, 0) >= 0 &&
+    sanitizeNumber(draft.customKcalTarget, 0) > 0 &&
     sanitizeNumber(draft.fiberTarget, 0) > 0 &&
     sanitizeNumber(draft.magnesiumTarget, 0) > 0 &&
     sanitizeNumber(draft.ironTarget, 0) > 0 &&
@@ -326,6 +334,20 @@ function FormulaInputs({
     <div className="grid gap-4">
       <div className="rounded-[1.25rem] bg-slate-50 px-4 py-4">
         <div className="text-sm font-semibold text-slate-900">Свои Б/Ж/У на кг</div>
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <label className="text-sm font-medium text-slate-600">
+            Ккал на день
+            <input
+              className={inputClass}
+              type="number"
+              min="1"
+              step="1"
+              value={values.customKcalTarget}
+              onChange={(event) => onChange({ customKcalTarget: event.target.value })}
+            />
+          </label>
+          <div className="hidden sm:block" />
+        </div>
         <div className="mt-3 grid grid-cols-3 gap-3">
           <label className="text-sm font-medium text-slate-600">
             Б / кг
@@ -573,8 +595,11 @@ function CurrentProfileForm({
   onUpdate: (changes: Partial<UserProfile>) => void;
   onDelete?: () => void;
 }) {
+  const [formulaOverrides, setFormulaOverrides] = useState<Partial<FormulaValues>>({});
+
   const handleModeChange = (formulaMode: FormulaMode) => {
     if (formulaMode !== "custom") {
+      setFormulaOverrides({});
       onUpdate({ formulaMode });
       return;
     }
@@ -584,6 +609,7 @@ function CurrentProfileForm({
 
     onUpdate({
       formulaMode,
+      customKcalTarget: user.customKcalTarget ?? fallback.kcal,
       proteinPerKg: user.proteinPerKg || coefficients.proteinPerKg,
       fatPerKg: user.fatPerKg || coefficients.fatPerKg,
       carbsPerKg: user.carbsPerKg ?? coefficients.carbsPerKg,
@@ -594,7 +620,9 @@ function CurrentProfileForm({
       omega3Target: user.omega3Target ?? fallback.omega3,
       vitaminB12Target: user.vitaminB12Target ?? fallback.vitaminB12,
     });
+    setFormulaOverrides({});
   };
+  const formulaDraft = { ...getProfileFormulaValues(user), ...formulaOverrides };
 
   return (
     <div className="grid gap-4">
@@ -671,23 +699,28 @@ function CurrentProfileForm({
 
       <FormulaInputs
         mode={user.formulaMode}
-        values={getProfileFormulaValues(user)}
+        values={formulaDraft}
         onChange={(changes) =>
-          onUpdate({
-            proteinPerKg:
-              changes.proteinPerKg === undefined ? undefined : sanitizeNumber(changes.proteinPerKg, user.proteinPerKg),
-            fatPerKg: changes.fatPerKg === undefined ? undefined : sanitizeNumber(changes.fatPerKg, user.fatPerKg),
-            carbsPerKg:
-              changes.carbsPerKg === undefined ? undefined : sanitizeNumber(changes.carbsPerKg, user.carbsPerKg),
-            fiberTarget: changes.fiberTarget === undefined ? undefined : getNumberOrNull(changes.fiberTarget),
-            magnesiumTarget:
-              changes.magnesiumTarget === undefined ? undefined : getNumberOrNull(changes.magnesiumTarget),
-            ironTarget: changes.ironTarget === undefined ? undefined : getNumberOrNull(changes.ironTarget),
-            zincTarget: changes.zincTarget === undefined ? undefined : getNumberOrNull(changes.zincTarget),
-            omega3Target: changes.omega3Target === undefined ? undefined : getNumberOrNull(changes.omega3Target),
-            vitaminB12Target:
-              changes.vitaminB12Target === undefined ? undefined : getNumberOrNull(changes.vitaminB12Target),
-          })
+          {
+            setFormulaOverrides((prev) => ({ ...prev, ...changes }));
+            onUpdate({
+              customKcalTarget:
+                changes.customKcalTarget === undefined ? undefined : getNumberOrNull(changes.customKcalTarget),
+              proteinPerKg:
+                changes.proteinPerKg === undefined ? undefined : sanitizeNumber(changes.proteinPerKg, user.proteinPerKg),
+              fatPerKg: changes.fatPerKg === undefined ? undefined : sanitizeNumber(changes.fatPerKg, user.fatPerKg),
+              carbsPerKg:
+                changes.carbsPerKg === undefined ? undefined : sanitizeNumber(changes.carbsPerKg, user.carbsPerKg),
+              fiberTarget: changes.fiberTarget === undefined ? undefined : getNumberOrNull(changes.fiberTarget),
+              magnesiumTarget:
+                changes.magnesiumTarget === undefined ? undefined : getNumberOrNull(changes.magnesiumTarget),
+              ironTarget: changes.ironTarget === undefined ? undefined : getNumberOrNull(changes.ironTarget),
+              zincTarget: changes.zincTarget === undefined ? undefined : getNumberOrNull(changes.zincTarget),
+              omega3Target: changes.omega3Target === undefined ? undefined : getNumberOrNull(changes.omega3Target),
+              vitaminB12Target:
+                changes.vitaminB12Target === undefined ? undefined : getNumberOrNull(changes.vitaminB12Target),
+            });
+          }
         }
       />
 
@@ -738,6 +771,7 @@ export function ProfileScreen() {
       weightKg: sanitizeNumber(draft.weightKg, 0),
       goalWeightKg: sanitizeNumber(draft.goalWeightKg, 0),
       formulaMode: draft.formulaMode,
+      customKcalTarget: getNumberOrNull(draft.customKcalTarget),
       proteinPerKg: sanitizeNumber(draft.proteinPerKg, FORMULA_PRESETS.maintain.proteinPerKg),
       fatPerKg: sanitizeNumber(draft.fatPerKg, FORMULA_PRESETS.maintain.fatPerKg),
       carbsPerKg: sanitizeNumber(draft.carbsPerKg, 0),
