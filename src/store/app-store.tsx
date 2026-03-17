@@ -109,6 +109,12 @@ function createId(prefix: string) {
   return `${prefix}-${crypto.randomUUID()}`;
 }
 
+function omitUndefined<T extends Record<string, unknown>>(value: T) {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, entryValue]) => entryValue !== undefined),
+  ) as Partial<T>;
+}
+
 function normalizeState(payload: PersistedAppState): PersistedAppState {
   return {
     ...payload,
@@ -341,26 +347,30 @@ function reducer(state: HydratedState, action: Action): HydratedState {
       };
     }
     case "updateProfile":
-      return {
-        ...state,
-        profiles: state.profiles.map((profile) =>
-          profile.id === action.payload.userId
-            ? {
-                ...profile,
-                ...action.payload.changes,
-                age: action.payload.changes.age ?? profile.age ?? 30,
-                activityLevel: normalizeActivityLevel(action.payload.changes.activityLevel ?? profile.activityLevel),
-                fiberTarget: action.payload.changes.fiberTarget ?? profile.fiberTarget ?? null,
-                magnesiumTarget: action.payload.changes.magnesiumTarget ?? profile.magnesiumTarget ?? null,
-                ironTarget: action.payload.changes.ironTarget ?? profile.ironTarget ?? null,
-                zincTarget: action.payload.changes.zincTarget ?? profile.zincTarget ?? null,
-                omega3Target: action.payload.changes.omega3Target ?? profile.omega3Target ?? null,
-                vitaminB12Target: action.payload.changes.vitaminB12Target ?? profile.vitaminB12Target ?? null,
-                updatedAt: new Date().toISOString(),
-              }
-            : profile,
-        ),
-      };
+      {
+        const cleanedChanges = omitUndefined(action.payload.changes);
+
+        return {
+          ...state,
+          profiles: state.profiles.map((profile) =>
+            profile.id === action.payload.userId
+              ? {
+                  ...profile,
+                  ...cleanedChanges,
+                  age: cleanedChanges.age ?? profile.age ?? 30,
+                  activityLevel: normalizeActivityLevel(cleanedChanges.activityLevel ?? profile.activityLevel),
+                  fiberTarget: cleanedChanges.fiberTarget ?? profile.fiberTarget ?? null,
+                  magnesiumTarget: cleanedChanges.magnesiumTarget ?? profile.magnesiumTarget ?? null,
+                  ironTarget: cleanedChanges.ironTarget ?? profile.ironTarget ?? null,
+                  zincTarget: cleanedChanges.zincTarget ?? profile.zincTarget ?? null,
+                  omega3Target: cleanedChanges.omega3Target ?? profile.omega3Target ?? null,
+                  vitaminB12Target: cleanedChanges.vitaminB12Target ?? profile.vitaminB12Target ?? null,
+                  updatedAt: new Date().toISOString(),
+                }
+              : profile,
+          ),
+        };
+      }
     case "deleteProfile": {
       if (state.profiles.length <= 1) {
         return state;
