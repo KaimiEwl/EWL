@@ -25,7 +25,7 @@ import { useAppStore } from "@/store/app-store";
 function BalanceBadge({ value }: { value: number }) {
   const over = value < 0;
   return (
-        <div className={`rounded-[1.1rem] px-3 py-2 text-sm font-semibold ${over ? "theme-status-warning" : "theme-important"}`}>
+    <div className={`rounded-[1.1rem] px-3 py-2 text-sm font-semibold ${over ? "theme-status-warning" : "theme-important"}`}>
       {over ? `+${Math.abs(value)}` : value}
     </div>
   );
@@ -95,6 +95,7 @@ export function PlanScreen({ initialDateParam }: { initialDateParam?: string }) 
           </div>
           {summary.balance ? <BalanceBadge value={summary.balance.kcal} /> : null}
         </div>
+
         <div className="mt-4 grid grid-cols-3 gap-2">
           <div className="theme-elevated rounded-[1.3rem] px-3 py-3">
             <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">Цель</div>
@@ -112,6 +113,27 @@ export function PlanScreen({ initialDateParam }: { initialDateParam?: string }) 
               }`}
             >
               {summary.balance?.kcal ?? 0}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          <div className="theme-elevated rounded-[1.2rem] px-3 py-3">
+            <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">Б</div>
+            <div className="mt-1 text-base font-semibold text-slate-900">
+              {summary.totals.protein} / {summary.target?.protein ?? 0}
+            </div>
+          </div>
+          <div className="theme-elevated rounded-[1.2rem] px-3 py-3">
+            <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">Ж</div>
+            <div className="mt-1 text-base font-semibold text-slate-900">
+              {summary.totals.fat} / {summary.target?.fat ?? 0}
+            </div>
+          </div>
+          <div className="theme-elevated rounded-[1.2rem] px-3 py-3">
+            <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">У</div>
+            <div className="mt-1 text-base font-semibold text-slate-900">
+              {summary.totals.carbs} / {summary.target?.carbs ?? 0}
             </div>
           </div>
         </div>
@@ -174,9 +196,7 @@ export function PlanScreen({ initialDateParam }: { initialDateParam?: string }) 
         </section>
       ) : null}
 
-      {topUpSuggestion ? (
-        <NutrientTopUpCard title="День почти закрыт" deficits={topUpSuggestion.deficits} products={topUpSuggestion.products} />
-      ) : null}
+      {topUpSuggestion ? <NutrientTopUpCard title="День почти закрыт" deficits={topUpSuggestion.deficits} products={topUpSuggestion.products} /> : null}
 
       <section className="app-card rounded-[2rem] p-5">
         <h2 className="text-lg font-semibold text-slate-900">Добавить свой прием пищи</h2>
