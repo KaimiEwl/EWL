@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { UserSwitcher } from "@/components/user-switcher";
 import { FORMULA_PRESETS } from "@/lib/constants";
-import { calculateTargets, resolveProfileFormula } from "@/lib/macros";
+import { calculateTargets, calculateTdee, resolveProfileFormula } from "@/lib/macros";
 import { getSelectedUser } from "@/lib/selectors";
 import {
   buildTransferState,
@@ -235,7 +235,39 @@ function isDraftValid(draft: ProfileDraft) {
   );
 }
 
-function SummaryPreview({ preview }: { preview: NutritionTotals }) {
+function getCustomDeficitWarning(profile: Pick<
+  UserProfile,
+  "formulaMode" | "customKcalTarget" | "sex" | "weightKg" | "heightCm" | "age" | "activityLevel"
+>) {
+  if (profile.formulaMode !== "custom" || typeof profile.customKcalTarget !== "number" || profile.customKcalTarget <= 0) {
+    return null;
+  }
+
+  const tdee = calculateTdee(profile);
+  const minimumRecommended = Math.round(tdee * 0.85);
+
+  if (profile.customKcalTarget >= minimumRecommended) {
+    return null;
+  }
+
+  const deficitPercent = Math.round((1 - profile.customKcalTarget / tdee) * 100);
+
+  return {
+    minimumRecommended,
+    deficitPercent,
+  };
+}
+
+function SummaryPreview({
+  preview,
+  warning,
+}: {
+  preview: NutritionTotals;
+  warning?: {
+    minimumRecommended: number;
+    deficitPercent: number;
+  } | null;
+}) {
   return (
     <div className="rounded-[1.2rem] bg-slate-50 px-4 py-3 text-sm text-slate-600">
       <div className="font-semibold text-slate-900">Предпросмотр цели</div>
@@ -247,6 +279,12 @@ function SummaryPreview({ preview }: { preview: NutritionTotals }) {
       <div className="mt-1 text-xs text-slate-500">
         Цинк {preview.zinc} мг • Омега-3 {preview.omega3} г • B12 {preview.vitaminB12} мкг
       </div>
+      {warning ? (
+        <div className="theme-status-warning mt-3 rounded-[1rem] px-3 py-3 text-xs leading-5">
+          Сейчас дефицит около {warning.deficitPercent}%. Это уже слишком жестко. Лучше не опускаться ниже{" "}
+          {warning.minimumRecommended} ккал в день, чтобы не делать дефицит больше 15%.
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -561,7 +599,7 @@ function ProfileForm({
         onChange={(changes) => onChange({ ...draft, ...changes })}
       />
 
-      <SummaryPreview preview={preview} />
+      <SummaryPreview preview={preview} warning={getCustomDeficitWarning(getPreviewProfile(draft))} />
 
       <div className="flex items-center gap-3">
         {onCancel ? (
@@ -724,7 +762,7 @@ function CurrentProfileForm({
         }
       />
 
-      <SummaryPreview preview={calculateTargets(user)} />
+      <SummaryPreview preview={calculateTargets(user)} warning={getCustomDeficitWarning(user)} />
 
       {onDelete ? (
         <button
