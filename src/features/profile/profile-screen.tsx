@@ -144,17 +144,21 @@ function getDraftFormulaValues(draft: ProfileDraft): FormulaValues {
 }
 
 function getProfileFormulaValues(user: UserProfile): FormulaValues {
-  return {
-    proteinPerKg: String(user.proteinPerKg),
-    fatPerKg: String(user.fatPerKg),
-    carbsPerKg: String(user.carbsPerKg),
-    fiberTarget: user.fiberTarget == null ? "" : String(user.fiberTarget),
-    magnesiumTarget: user.magnesiumTarget == null ? "" : String(user.magnesiumTarget),
-    ironTarget: user.ironTarget == null ? "" : String(user.ironTarget),
-    zincTarget: user.zincTarget == null ? "" : String(user.zincTarget),
-    omega3Target: user.omega3Target == null ? "" : String(user.omega3Target),
-    vitaminB12Target: user.vitaminB12Target == null ? "" : String(user.vitaminB12Target),
-  };
+  const fallback = calculateTargets({ ...user, formulaMode: user.formulaMode === "custom" ? "maintain" : user.formulaMode });
+  return ensureCustomFormulaFields(
+    {
+      proteinPerKg: String(user.proteinPerKg),
+      fatPerKg: String(user.fatPerKg),
+      carbsPerKg: String(user.carbsPerKg),
+      fiberTarget: user.fiberTarget == null ? "" : String(user.fiberTarget),
+      magnesiumTarget: user.magnesiumTarget == null ? "" : String(user.magnesiumTarget),
+      ironTarget: user.ironTarget == null ? "" : String(user.ironTarget),
+      zincTarget: user.zincTarget == null ? "" : String(user.zincTarget),
+      omega3Target: user.omega3Target == null ? "" : String(user.omega3Target),
+      vitaminB12Target: user.vitaminB12Target == null ? "" : String(user.vitaminB12Target),
+    },
+    fallback,
+  );
 }
 
 function ensureCustomFormulaFields(values: FormulaValues, fallback: NutritionTotals): FormulaValues {
