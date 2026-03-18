@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { UserSwitcher } from "@/components/user-switcher";
 import { FORMULA_PRESETS } from "@/lib/constants";
-import { calculateTargets, calculateTdee, resolveProfileFormula } from "@/lib/macros";
+import { calculateMicronutrientTargets, calculateTargets, calculateTdee, resolveProfileFormula } from "@/lib/macros";
 import { getSelectedUser } from "@/lib/selectors";
 import { buildTransferState, decodeTransferKey, downloadStateBackup, encodeTransferKey } from "@/lib/transfer";
 import type {
@@ -750,6 +750,19 @@ function ProfileForm({
     const nextFormula = syncCustomFormulaValues(getDraftFormulaValues(draft), changes, weight);
     onChange({ ...draft, ...nextFormula });
   };
+  const recommendedMicros = calculateMicronutrientTargets(getPreviewProfile(draft), preview.kcal);
+
+  const applyRecommendedMicros = () => {
+    onChange({
+      ...draft,
+      fiberTarget: String(recommendedMicros.fiber),
+      magnesiumTarget: String(recommendedMicros.magnesium),
+      ironTarget: String(recommendedMicros.iron),
+      zincTarget: String(recommendedMicros.zinc),
+      omega3Target: String(recommendedMicros.omega3),
+      vitaminB12Target: String(recommendedMicros.vitaminB12),
+    });
+  };
 
   return (
     <div className="grid gap-4">
@@ -838,6 +851,26 @@ function ProfileForm({
         onChange={handleFormulaChange}
       />
 
+      {draft.formulaMode === "custom" ? (
+        <div className="rounded-[1.25rem] bg-slate-50 px-4 py-4 text-sm text-slate-600">
+          <div className="font-semibold text-slate-900">Ориентиры по нутриентам</div>
+          <div className="mt-1 text-xs leading-5 text-slate-500">
+            Подставил базовые нормы по полу и текущим калориям, чтобы было проще стартовать.
+          </div>
+          <div className="mt-3 rounded-[1rem] border border-[var(--color-outline)] bg-white px-4 py-3 text-xs leading-5">
+            Клетчатка {recommendedMicros.fiber} г • Mg {recommendedMicros.magnesium} мг • Fe {recommendedMicros.iron} мг • Zn {recommendedMicros.zinc} мг
+            <div className="mt-1">Омега-3 {recommendedMicros.omega3} г • B12 {recommendedMicros.vitaminB12} мкг</div>
+          </div>
+          <button
+            type="button"
+            onClick={applyRecommendedMicros}
+            className="mt-3 rounded-full bg-[var(--color-accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--color-accent)]"
+          >
+            Подставить ориентиры
+          </button>
+        </div>
+      ) : null}
+
       <SummaryPreview preview={preview} warning={getCustomDeficitWarning(getPreviewProfile(draft))} />
 
       <div className="flex items-center gap-3">
@@ -900,6 +933,32 @@ function CurrentProfileForm({
     setFormulaOverrides({});
   };
   const formulaDraft = { ...getProfileFormulaValues(user), ...formulaOverrides };
+  const profilePreview = calculateTargets({
+    ...user,
+    customKcalTarget: getNumberOrNull(formulaDraft.customKcalTarget),
+  });
+  const recommendedMicros = calculateMicronutrientTargets(user, profilePreview.kcal);
+
+  const applyRecommendedMicros = () => {
+    const changes = {
+      fiberTarget: String(recommendedMicros.fiber),
+      magnesiumTarget: String(recommendedMicros.magnesium),
+      ironTarget: String(recommendedMicros.iron),
+      zincTarget: String(recommendedMicros.zinc),
+      omega3Target: String(recommendedMicros.omega3),
+      vitaminB12Target: String(recommendedMicros.vitaminB12),
+    };
+    setFormulaOverrides((current) => ({ ...current, ...changes }));
+    onUpdate({
+      fiberTarget: recommendedMicros.fiber,
+      magnesiumTarget: recommendedMicros.magnesium,
+      ironTarget: recommendedMicros.iron,
+      zincTarget: recommendedMicros.zinc,
+      omega3Target: recommendedMicros.omega3,
+      vitaminB12Target: recommendedMicros.vitaminB12,
+    });
+  };
+
   const handleFormulaInputChange = (changes: Partial<FormulaValues>) => {
     const weight = user.weightKg;
     const nextFormula = syncCustomFormulaValues(formulaDraft, changes, weight);
@@ -1002,7 +1061,33 @@ function CurrentProfileForm({
         onChange={handleFormulaInputChange}
       />
 
-      <SummaryPreview preview={calculateTargets(user)} warning={getCustomDeficitWarning(user)} />
+      {user.formulaMode === "custom" ? (
+        <div className="rounded-[1.25rem] bg-slate-50 px-4 py-4 text-sm text-slate-600">
+          <div className="font-semibold text-slate-900">Ориентиры по нутриентам</div>
+          <div className="mt-1 text-xs leading-5 text-slate-500">
+            Это базовые нормы по полу и текущим калориям. Их можно подставить в поля и потом при желании поправить вручную.
+          </div>
+          <div className="mt-3 rounded-[1rem] border border-[var(--color-outline)] bg-white px-4 py-3 text-xs leading-5">
+            Клетчатка {recommendedMicros.fiber} г • Mg {recommendedMicros.magnesium} мг • Fe {recommendedMicros.iron} мг • Zn {recommendedMicros.zinc} мг
+            <div className="mt-1">Омега-3 {recommendedMicros.omega3} г • B12 {recommendedMicros.vitaminB12} мкг</div>
+          </div>
+          <button
+            type="button"
+            onClick={applyRecommendedMicros}
+            className="mt-3 rounded-full bg-[var(--color-accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--color-accent)]"
+          >
+            Подставить ориентиры
+          </button>
+        </div>
+      ) : null}
+
+      <SummaryPreview
+        preview={profilePreview}
+        warning={getCustomDeficitWarning({
+          ...user,
+          customKcalTarget: getNumberOrNull(formulaDraft.customKcalTarget),
+        })}
+      />
 
       {onDelete ? (
         <button
