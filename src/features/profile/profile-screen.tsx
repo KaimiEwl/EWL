@@ -428,13 +428,22 @@ function ActivityInput({
 function FormulaInputs({
   mode,
   values,
+  warning,
   onChange,
 }: {
   mode: FormulaMode;
   values: FormulaValues;
+  warning?: {
+    minimumRecommended: number;
+    deficitPercent: number;
+  } | null;
   onChange: (value: Partial<FormulaValues>) => void;
 }) {
-  if (mode !== "custom") {
+  if (mode === "custom") {
+    return <CustomFormulaInputs values={values} warning={warning} onChange={onChange} />;
+  }
+
+  {
     const preset = FORMULA_PRESETS[mode];
 
     return (
@@ -468,6 +477,146 @@ function FormulaInputs({
             />
           </label>
           <div className="hidden sm:block" />
+        </div>
+        <div className="mt-3 grid grid-cols-3 gap-3">
+          <label className="text-sm font-medium text-slate-600">
+            Б / кг
+            <input
+              className={inputClass}
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={values.proteinPerKg}
+              onChange={(event) => onChange({ proteinPerKg: event.target.value })}
+            />
+          </label>
+          <label className="text-sm font-medium text-slate-600">
+            Ж / кг
+            <input
+              className={inputClass}
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={values.fatPerKg}
+              onChange={(event) => onChange({ fatPerKg: event.target.value })}
+            />
+          </label>
+          <label className="text-sm font-medium text-slate-600">
+            У / кг
+            <input
+              className={inputClass}
+              type="number"
+              min="0"
+              step="0.1"
+              value={values.carbsPerKg}
+              onChange={(event) => onChange({ carbsPerKg: event.target.value })}
+            />
+          </label>
+        </div>
+      </div>
+
+      <div className="rounded-[1.25rem] bg-slate-50 px-4 py-4">
+        <div className="text-sm font-semibold text-slate-900">Свои нутриенты на день</div>
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <label className="text-sm font-medium text-slate-600">
+            Клетчатка, г
+            <input
+              className={inputClass}
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={values.fiberTarget}
+              onChange={(event) => onChange({ fiberTarget: event.target.value })}
+            />
+          </label>
+          <label className="text-sm font-medium text-slate-600">
+            Магний, мг
+            <input
+              className={inputClass}
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={values.magnesiumTarget}
+              onChange={(event) => onChange({ magnesiumTarget: event.target.value })}
+            />
+          </label>
+          <label className="text-sm font-medium text-slate-600">
+            Железо, мг
+            <input
+              className={inputClass}
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={values.ironTarget}
+              onChange={(event) => onChange({ ironTarget: event.target.value })}
+            />
+          </label>
+          <label className="text-sm font-medium text-slate-600">
+            Цинк, мг
+            <input
+              className={inputClass}
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={values.zincTarget}
+              onChange={(event) => onChange({ zincTarget: event.target.value })}
+            />
+          </label>
+          <label className="text-sm font-medium text-slate-600">
+            Омега-3, г
+            <input
+              className={inputClass}
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={values.omega3Target}
+              onChange={(event) => onChange({ omega3Target: event.target.value })}
+            />
+          </label>
+          <label className="text-sm font-medium text-slate-600">
+            Витамин B12, мкг
+            <input
+              className={inputClass}
+              type="number"
+              min="0.1"
+              step="0.1"
+              value={values.vitaminB12Target}
+              onChange={(event) => onChange({ vitaminB12Target: event.target.value })}
+            />
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CustomFormulaInputs({
+  values,
+  warning,
+  onChange,
+}: {
+  values: FormulaValues;
+  warning?: {
+    minimumRecommended: number;
+    deficitPercent: number;
+  } | null;
+  onChange: (value: Partial<FormulaValues>) => void;
+}) {
+  return (
+    <div className="grid gap-4">
+      <div className="rounded-[1.25rem] bg-slate-50 px-4 py-4">
+        <div className="text-sm font-semibold text-slate-900">Свои Б/Ж/У на кг</div>
+        <div className="mt-1 text-xs leading-5 text-slate-500">
+          Введите Б/Ж/У на кг, чтобы получить нужное количество калорий.
+        </div>
+        <div className="mt-3 rounded-[1rem] border border-[var(--color-outline)] bg-white px-4 py-3">
+          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Калории на день</div>
+          <div className="mt-2 text-2xl font-semibold text-slate-900">{values.customKcalTarget || "0"} ккал</div>
+          {warning ? (
+            <div className="theme-status-warning mt-3 rounded-[0.9rem] px-3 py-3 text-xs leading-5">
+              Это уже дефицит около {warning.deficitPercent}%. Больше 15% обычно не рекомендуют. Лучше не опускаться ниже {warning.minimumRecommended} ккал.
+            </div>
+          ) : null}
         </div>
         <div className="mt-3 grid grid-cols-3 gap-3">
           <label className="text-sm font-medium text-slate-600">
@@ -685,6 +834,7 @@ function ProfileForm({
       <FormulaInputs
         mode={draft.formulaMode}
         values={getDraftFormulaValues(draft)}
+        warning={getCustomDeficitWarning(getPreviewProfile(draft))}
         onChange={handleFormulaChange}
       />
 
@@ -845,6 +995,10 @@ function CurrentProfileForm({
       <FormulaInputs
         mode={user.formulaMode}
         values={formulaDraft}
+        warning={getCustomDeficitWarning({
+          ...user,
+          customKcalTarget: getNumberOrNull(formulaDraft.customKcalTarget),
+        })}
         onChange={handleFormulaInputChange}
       />
 
